@@ -210,7 +210,12 @@ pub mod parsers {
 // -------------------------------------------------------------------
 
 #[doc(inline)]
-pub use crate::{args::Args, buffer::Doc, error::ParseFailure, info::OptionParser};
+pub use crate::{
+    args::Args,
+    buffer::Doc,
+    error::{MessageStream, ParseFailure, RenderedParseFailure},
+    info::OptionParser,
+};
 
 #[doc(hidden)]
 // used by construct macro, not part of public API

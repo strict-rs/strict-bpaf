@@ -52,6 +52,17 @@
 #[doc(inline)]
 pub use crate::buffer::{Doc, MetaInfo, Style};
 
+/// Color choice to use when rendering generated parser output.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ColorChoice {
+    /// Detect color support from the target streams.
+    Auto,
+    /// Always emit ANSI styling.
+    Always,
+    /// Never emit ANSI styling.
+    Never,
+}
+
 #[doc(inline)]
 #[cfg(feature = "docgen")]
 pub use crate::buffer::Section;

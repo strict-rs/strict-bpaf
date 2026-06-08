@@ -3,6 +3,7 @@ use std::ops::Range;
 use crate::{
     args::{Arg, State},
     buffer::{Block, Color, Doc, Style, Token},
+    doc::ColorChoice,
     item::{Item, ShortLong},
     meta_help::Metavar,
     meta_youmean::{Suggestion, Variant},
@@ -188,6 +189,26 @@ pub enum ParseFailure {
     Stderr(Doc),
 }
 
+/// Output stream for a rendered parse failure.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum MessageStream {
+    /// Rendered message belongs on stdout.
+    Stdout,
+    /// Rendered message belongs on stderr.
+    Stderr,
+}
+
+/// Fully rendered parse-failure output.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RenderedParseFailure {
+    /// Stream the message should be written to.
+    pub stream: MessageStream,
+    /// Rendered text, including any trailing newline `bpaf` would print.
+    pub text: String,
+    /// Process exit code associated with the parse outcome.
+    pub exit_code: i32,
+}
+
 impl ParseFailure {
     /// Returns the contained `stderr` values - for unit tests
     ///
@@ -260,6 +281,59 @@ impl ParseFailure {
                 eprintln!("{}{}", error, msg.render_console(true, color, max_width));
             }
         }
+    }
+
+    /// Render a message to `stdout` or `stderr` appropriate to the failure.
+    #[allow(clippy::must_use_candidate)]
+    pub fn render_message(&self, color: ColorChoice, max_width: usize) -> RenderedParseFailure {
+        let color = render_color(color);
+        match self {
+            ParseFailure::Stdout(msg, full) => RenderedParseFailure {
+                stream: MessageStream::Stdout,
+                text: format!("{}\n", msg.render_console(*full, color, max_width)),
+                exit_code: 0,
+            },
+            ParseFailure::Completion(s) => RenderedParseFailure {
+                stream: MessageStream::Stdout,
+                text: s.clone(),
+                exit_code: 0,
+            },
+            ParseFailure::Stderr(msg) => RenderedParseFailure {
+                stream: MessageStream::Stderr,
+                text: format!(
+                    "{}{}\n",
+                    error_prefix(color),
+                    msg.render_console(true, color, max_width)
+                ),
+                exit_code: 1,
+            },
+        }
+    }
+}
+
+fn render_color(choice: ColorChoice) -> Color {
+    match choice {
+        ColorChoice::Auto => Color::default(),
+        ColorChoice::Never => Color::Monochrome,
+        #[cfg(feature = "color")]
+        ColorChoice::Always => Color::Dull,
+        #[cfg(not(feature = "color"))]
+        ColorChoice::Always => Color::Monochrome,
+    }
+}
+
+fn error_prefix(color: Color) -> String {
+    #[cfg(not(feature = "color"))]
+    {
+        let _ = color;
+        "Error: ".to_owned()
+    }
+
+    #[cfg(feature = "color")]
+    {
+        let mut error = String::new();
+        color.push_str(Style::Invalid, &mut error, "Error: ");
+        error
     }
 }
 
