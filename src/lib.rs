@@ -1510,23 +1510,40 @@ where
     construct!(skip, parser).map(|x| x.1)
 }
 
-/// Choose between several parsers specified at runtime
+/// Choose between several parsers specified at runtime, with a caller-supplied
+/// message for the empty-iterator case
 ///
-/// You can use this function to create multiple parsers that produce the same type of value at a runtime
-/// and let bpaf to pick one that best fits best. This function is designed to work in Combinatoric
-/// API, but you can use it in Derive API with `extern`.
-///
-#[cfg_attr(not(doctest), doc = include_str!("docs2/choice.md"))]
-pub fn choice<T: 'static>(parsers: impl IntoIterator<Item = Box<dyn Parser<T>>>) -> impl Parser<T> {
+/// Behaves like [`choice`], but instead of the fixed `"Invalid choice usage"`
+/// message, an empty `parsers` iterator folds to a parser that always fails with
+/// `empty_message`. Useful when an empty set is a legitimate runtime state that
+/// deserves a domain-specific diagnostic rather than a generic usage error -
+/// for example a registry of plugin commands that is allowed to be empty.
+pub fn choice_with<T: 'static>(
+    parsers: impl IntoIterator<Item = Box<dyn Parser<T>>>,
+    empty_message: &'static str,
+) -> impl Parser<T> {
     let mut parsers = parsers.into_iter();
     let mut this = match parsers.next() {
-        None => return fail("Invalid choice usage").boxed(),
+        None => return fail(empty_message).boxed(),
         Some(p) => p,
     };
     for that in parsers {
         this = Box::new(ParseOrElse { this, that })
     }
     this
+}
+
+/// Choose between several parsers specified at runtime
+///
+/// You can use this function to create multiple parsers that produce the same type of value at a runtime
+/// and let bpaf to pick one that best fits best. This function is designed to work in Combinatoric
+/// API, but you can use it in Derive API with `extern`.
+///
+/// For a custom message in the empty-iterator case, see [`choice_with`].
+///
+#[cfg_attr(not(doctest), doc = include_str!("docs2/choice.md"))]
+pub fn choice<T: 'static>(parsers: impl IntoIterator<Item = Box<dyn Parser<T>>>) -> impl Parser<T> {
+    choice_with(parsers, "Invalid choice usage")
 }
 
 /// Parse the application name
