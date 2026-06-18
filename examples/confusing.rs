@@ -68,5 +68,9 @@ fn main() {
     });
 
     let cmd = parser.to_options().run();
-    println!("{:?}", cmd);
+    match cmd {
+        Command::Simple => println!("simple"),
+        Command::Complex1(token, arg) => println!("complex1: token={token}, arg={arg}"),
+        Command::Complex2(token, arg) => println!("complex2: token={token}, arg={arg}"),
+    }
 }

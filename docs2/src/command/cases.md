@@ -23,7 +23,7 @@ And this one - both inside and outside
 > --flag cmd --arg 42 --flag
 
 And that's the confusing part - unless you add context restrictions with
-[`adjacent`](crate::ParseCon::adjacent) and parse command first - outer flag wins.
+[`adjacent`](crate::Cx) and parse command first - outer flag wins.
 So it's best not to mix names on different levels
 
 > cmd --arg 42 --flag

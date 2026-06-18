@@ -1,4 +1,4 @@
-use crate::shared::{cargo_opts, parse_package, CargoOpts};
+use crate::shared::{CargoOpts, cargo_opts, parse_package};
 use bpaf::*;
 use std::process::Command;
 

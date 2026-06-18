@@ -1,6 +1,6 @@
 //! pretty basic derive example with external function
 
-use bpaf::{short, Bpaf, Parser};
+use bpaf::{Bpaf, Parser, short};
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, Bpaf)]

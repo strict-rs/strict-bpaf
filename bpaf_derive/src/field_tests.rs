@@ -1,50 +1,45 @@
-use crate::field::*;
 use pretty_assertions::assert_eq;
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
-use syn::{parse, parse::Parse, parse2, parse_quote, Result};
+use quote::{ToTokens, quote};
+use syn::{parse::Parse, parse_quote};
 
-#[derive(Debug)]
-struct UnnamedField {
-    parser: StructField,
-}
-
-impl Parse for UnnamedField {
-    fn parse(input: parse::ParseStream) -> Result<Self> {
-        Ok(Self {
-            parser: StructField::parse_unnamed(input)?,
-        })
-    }
-}
-
-impl ToTokens for UnnamedField {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        self.parser.to_tokens(tokens)
-    }
-}
-
-#[derive(Debug)]
-struct NamedField {
-    parser: StructField,
-}
+/// Test harness: capture a single field and run it through the real `parse → lower_field →
+/// codegen` pipeline, so these byte-identical snapshots verify the new pipeline's field handling
+/// (and field-level errors still come from the ported `lower_field`).
+struct NamedField(TokenStream);
+struct UnnamedField(TokenStream);
 
 impl Parse for NamedField {
-    fn parse(input: parse::ParseStream) -> Result<Self> {
-        Ok(Self {
-            parser: StructField::parse_named(input)?,
-        })
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        Ok(NamedField(input.parse()?))
     }
 }
 
 impl ToTokens for NamedField {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        self.parser.to_tokens(tokens)
+        crate::expand_field(true, self.0.clone())
+            .unwrap()
+            .to_tokens(tokens)
+    }
+}
+
+impl Parse for UnnamedField {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        Ok(UnnamedField(input.parse()?))
+    }
+}
+
+impl ToTokens for UnnamedField {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        crate::expand_field(false, self.0.clone())
+            .unwrap()
+            .to_tokens(tokens)
     }
 }
 
 #[track_caller]
 fn field_trans_fail(input: TokenStream, expected_err: &str) {
-    let err = syn::parse2::<NamedField>(input).unwrap_err().to_string();
+    let err = crate::expand_field(true, input).unwrap_err().to_string();
     assert_eq!(err, expected_err)
 }
 
@@ -385,7 +380,7 @@ fn better_error_for_unnamed_argument() {
         #[bpaf(argument("FILE"))]
         pub PathBuf
     );
-    let err = parse2::<UnnamedField>(input).unwrap_err().to_string();
+    let err = crate::expand_field(false, input).unwrap_err().to_string();
     assert_eq!(
         err,
         "This consumer needs a name, you can specify it with long(\"name\") or short('n')"

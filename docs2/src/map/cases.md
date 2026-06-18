@@ -8,6 +8,6 @@ Here `--number` takes a numerical value and doubles it
 
 But if function inside the parser fails - user will get the error back unless it's handled
 in some way. In fact here execution never reaches `map` function -
-[`argument`](NamedArg::argument) tries to parse `ten` as a number, fails and reports the error
+[`argument`](crate::Cx::argument) tries to parse `ten` as a number, fails and reports the error
 
 > --number ten

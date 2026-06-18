@@ -8,18 +8,15 @@
 //!
 //! To use it you should do something like this
 //! ```
-//! #[test]
-//! fn update_doc() {
-//!     # use bpaf::*;
-//!     # let options = || short('a').switch().to_options();
-//!     let options = options();
-//!     let md = options.render_markdown("app_name");
-//!     let roff = options.render_manpage("app_name", Section::General, None, None, None);
-//!     # drop(md); drop(roff);
-//!     // then save those docs into a files
-//!     // If you commit those docs into your repo and optionally fail a test if there
-//!     // are changes - CI will ensure that documentation is always up to date
-//! }
+//! # use bpaf::*;
+//! # let options = || short('a').switch().to_options();
+//! let options = options();
+//! let md = options.render_markdown("app_name");
+//! let roff = options.render_manpage("app_name", Section::General, None, None, None);
+//! # drop(md); drop(roff);
+//! // then save those docs into a files
+//! // If you commit those docs into your repo and optionally fail a test if there
+//! // are changes - CI will ensure that documentation is always up to date
 //! ```
 //!
 //! # Documentation fragments to use inside `--help` messages

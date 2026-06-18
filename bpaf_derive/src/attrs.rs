@@ -1,8 +1,8 @@
-use proc_macro2::{Span, TokenStream};
-use quote::{quote, ToTokens};
+use proc_macro2::Span;
 use syn::{
+    Attribute, Error, Expr, Ident, LitChar, LitStr, Path, Result, Type,
     parse::{Parse, ParseStream},
-    token, Attribute, Error, Expr, Ident, LitChar, LitStr, Path, Result, Type,
+    token,
 };
 
 use crate::{
@@ -25,15 +25,6 @@ fn type_fish(input: ParseStream) -> Result<Option<Type>> {
     } else {
         None
     })
-}
-
-pub struct TurboFish<'a>(pub &'a Type);
-
-impl ToTokens for TurboFish<'_> {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let ty = &self.0;
-        quote!(::<#ty>).to_tokens(tokens);
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -94,25 +85,6 @@ impl Consumer {
             | Consumer::Pure { span, .. } => *span,
         }
     }
-
-    pub(crate) fn help_placement(&self) -> HelpPlacement {
-        match self {
-            Consumer::Switch { .. }
-            | Consumer::Flag { .. }
-            | Consumer::ReqFlag { .. }
-            | Consumer::Argument { .. } => HelpPlacement::AtName,
-            Consumer::Any { .. } | Consumer::Positional { .. } => HelpPlacement::AtConsumer,
-            Consumer::External { .. } | Consumer::PureWith { .. } | Consumer::Pure { .. } => {
-                HelpPlacement::NotAvailable
-            }
-        }
-    }
-}
-
-pub(crate) enum HelpPlacement {
-    AtName,
-    AtConsumer,
-    NotAvailable,
 }
 
 impl Consumer {
@@ -150,9 +122,16 @@ impl StrictName {
             Name::Short { name: None, span } => match ident {
                 Some(name) => {
                     let derived_name = to_kebab_case(&name.to_string()).chars().next().unwrap();
-                    Self::Short { name: LitChar::new(derived_name, span) }
+                    Self::Short {
+                        name: LitChar::new(derived_name, span),
+                    }
                 }
-                None => return Err(Error::new(span, "Can't derive an explicit name for unnamed struct, try adding a name here like short('f')", ))
+                None => {
+                    return Err(Error::new(
+                        span,
+                        "Can't derive an explicit name for unnamed struct, try adding a name here like short('f')",
+                    ));
+                }
             },
             Name::Long {
                 name: Some(name), ..
@@ -160,9 +139,16 @@ impl StrictName {
             Name::Long { name: None, span } => match ident {
                 Some(name) => {
                     let derived_name = to_kebab_case(&name.to_string());
-                    Self::Long{ name: LitStr::new(&derived_name, span) }
+                    Self::Long {
+                        name: LitStr::new(&derived_name, span),
+                    }
                 }
-                None => return Err(Error::new(span, "Can't derive an explicit name for unnamed struct, try adding a name here like long(\"arg\")", ))
+                None => {
+                    return Err(Error::new(
+                        span,
+                        "Can't derive an explicit name for unnamed struct, try adding a name here like long(\"arg\")",
+                    ));
+                }
             },
             Name::Env { name, .. } => Self::Env { name },
         })
@@ -176,17 +162,6 @@ pub(crate) enum StrictName {
     Env { name: Box<Expr> },
 }
 
-impl ToTokens for StrictName {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        match self {
-            StrictName::Short { name } => quote!(short(#name)),
-            StrictName::Long { name } => quote!(long(#name)),
-            StrictName::Env { name } => quote!(env(#name)),
-        }
-        .to_tokens(tokens);
-    }
-}
-
 #[derive(Debug, Clone)]
 pub(crate) enum Post {
     /// Those items can change the type of the result
@@ -195,60 +170,10 @@ pub(crate) enum Post {
     Decor(PostDecor),
 }
 
-impl ToTokens for Post {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        match self {
-            Post::Parse(p) => p.to_tokens(tokens),
-            Post::Decor(p) => p.to_tokens(tokens),
-        }
-    }
-}
-
-impl ToTokens for PostParse {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        match self {
-            PostParse::Adjacent { .. } => quote!(adjacent()),
-            PostParse::Catch { .. } => quote!(catch()),
-            PostParse::Many { .. } => quote!(many()),
-            PostParse::Collect { .. } => quote!(collect()),
-            PostParse::Count { .. } => quote!(count()),
-            PostParse::Some_ { msg, .. } => quote!(some(#msg)),
-            PostParse::Map { f, .. } => quote!(map(#f)),
-            PostParse::Optional { .. } => quote!(optional()),
-            PostParse::Parse { f, .. } => quote!(parse(#f)),
-            PostParse::Strict { .. } => quote!(strict()),
-            PostParse::NonStrict { .. } => quote!(non_strict()),
-            PostParse::Anywhere { .. } => quote!(anywhere()),
-        }
-        .to_tokens(tokens);
-    }
-}
-
-impl ToTokens for PostDecor {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        match self {
-            PostDecor::Complete { f, .. } => quote!(complete(#f)),
-            PostDecor::CompleteGroup { group, .. } => quote!(group(#group)),
-            PostDecor::CompleteShell { f, .. } => quote!(complete_shell(#f)),
-            PostDecor::DebugFallback { .. } => quote!(debug_fallback()),
-            PostDecor::DisplayFallback { .. } => quote!(display_fallback()),
-            PostDecor::FormatFallback { formatter, .. } => quote!(format_fallback(#formatter)),
-            PostDecor::Fallback { value, .. } => quote!(fallback(#value)),
-            PostDecor::FallbackWith { f, .. } => quote!(fallback_with(#f)),
-            PostDecor::Last { .. } => quote!(last()),
-            PostDecor::GroupHelp { doc, .. } => quote!(group_help(#doc)),
-            PostDecor::Guard { check, msg, .. } => quote!(guard(#check, #msg)),
-            PostDecor::Hide { .. } => quote!(hide()),
-            PostDecor::CustomUsage { usage, .. } => quote!(custom_usage(#usage)),
-            PostDecor::HideUsage { .. } => quote!(hide_usage()),
-        }
-        .to_tokens(tokens);
-    }
-}
-
 #[derive(Debug, Clone)]
 pub(crate) enum PostParse {
     Adjacent { span: Span },
+    StartAdjacent { span: Span },
     Catch { span: Span },
     Many { span: Span },
     Collect { span: Span },
@@ -265,6 +190,7 @@ impl PostParse {
     fn span(&self) -> Span {
         match self {
             Self::Adjacent { span }
+            | Self::StartAdjacent { span }
             | Self::Catch { span }
             | Self::Many { span }
             | Self::Collect { span }
@@ -471,6 +397,8 @@ impl PostParse {
         let span = kw.span();
         Ok(Some(if kw == "adjacent" {
             Self::Adjacent { span }
+        } else if kw == "start_adjacent" {
+            Self::StartAdjacent { span }
         } else if kw == "catch" {
             Self::Catch { span }
         } else if kw == "many" {
@@ -552,16 +480,6 @@ impl PostDecor {
 pub(crate) struct CustomHelp {
     pub span: Span,
     pub doc: Box<Expr>,
-}
-
-#[derive(Debug, Clone)]
-pub(crate) struct EnumPrefix(pub Ident);
-
-impl ToTokens for EnumPrefix {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let name = &self.0;
-        quote!(#name ::).to_tokens(tokens);
-    }
 }
 
 impl CustomHelp {

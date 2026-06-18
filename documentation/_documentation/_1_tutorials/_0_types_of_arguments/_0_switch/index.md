@@ -16,5 +16,5 @@ $ ls <span style="font-weight: bold">--time --reverse</span>
 
 #![cfg_attr(not(doctest), doc = include_str!("docs2/switch.md"))]
 
-For more detailed info see [`NamedArg::switch`] and
-[`NamedArg::flag`]
+For more detailed info see [`switch`](crate::Cx::switch) and
+[`flag`](crate::Cx::flag)

@@ -5,10 +5,10 @@
 /// This example takes two - optional numeric prefix and a command name:
 ///
 /// > numeric_prefix 8 work
-/// Options { prefix: Some(8), command: "work" }
+/// > Options { prefix: Some(8), command: "work" }
 ///
 /// > numeric_prefix sleep
-/// Options { prefix: None, command: "sleep" }
+/// > Options { prefix: None, command: "sleep" }
 ///
 /// Generated usage reflects that:
 /// Usage: numeric_prefix [PREFIX] COMMAND

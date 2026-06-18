@@ -1,4 +1,4 @@
-use bpaf_cauwugo::opts::{cauwugo_opts, Cauwugo};
+use bpaf_cauwugo::opts::{Cauwugo, cauwugo_opts};
 use std::process::Command;
 
 fn main() -> std::io::Result<()> {

@@ -4,18 +4,18 @@ Let's start with the simplest possible one - a simple switch that gets parsed in
 
 First of all - the switch needs a name - you can start with [`short`] or [`long`] and add more
 names if you want: `long("simple")` or `short('s').long("simple")`. This gives something with
-the type [`NamedArg`]:
+the type [`Cx<Named>`](crate::Cx):
 
 ```rust
 # use bpaf::*;
-use bpaf::parsers::NamedArg;
-fn simple_switch() -> NamedArg {
+use bpaf::{Cx, parsers::Named};
+fn simple_switch() -> Cx<Named> {
     short('s').long("simple")
 }
 ```
 
-From `NamedArg` you make a switch parser by calling [`NamedArg::switch`]. Usually, you do it
-right away without assigning `NamedArg` to a variable.
+From `Cx<Named>` you make a switch parser by calling [`switch`](crate::Cx::switch). Usually, you
+do it right away without assigning `Cx<Named>` to a variable.
 
 ```rust
 # use bpaf::*;
@@ -31,4 +31,4 @@ Full example with some sample inputs and outputs:
 #![cfg_attr(not(doctest), doc = include_str!("docs2/compose_basic_switch.md"))]
 
 
-With [`NamedArg::help`] you can attach a help message that will be used in `--help` output.
+With [`help`](crate::Cx) you can attach a help message that will be used in `--help` output.

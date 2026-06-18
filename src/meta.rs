@@ -89,9 +89,12 @@ impl Meta {
                     match (*is_pos, i.is_pos()) {
                         (true, true) | (false, false) => {}
                         (true, false) => {
-                            panic!("bpaf usage BUG: all positional and command items must be placed in the right \
+                            panic!(
+                                "bpaf usage BUG: all positional and command items must be placed in the right \
                         most position of the structure or tuple they are in but {:?} breaks this rule. \
-                        See bpaf documentation for `positional` for details.", i);
+                        See bpaf documentation for `positional` for details.",
+                                i
+                            );
                         }
                         (false, true) => {
                             *is_pos = true;

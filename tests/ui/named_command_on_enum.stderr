@@ -1,0 +1,5 @@
+error: You can't annotate `enum` with a named command.
+ --> tests/ui/named_command_on_enum.rs:5:16
+  |
+5 | #[bpaf(command("run"))]
+  |                ^^^^^

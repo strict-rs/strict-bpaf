@@ -1,11 +1,12 @@
 use std::{cell::RefCell, process::Command, rc::Rc};
 
 use bpaf::*;
+use cargo_metadata::TargetKind;
 
 use crate::{
-    metadata::{matching_targets, Exec, MatchKind},
+    metadata::{Exec, MatchKind, matching_targets},
     opts::complete_target_kind,
-    shared::{cargo_opts, package_and_testables, CargoOpts, PackageAndTestables},
+    shared::{CargoOpts, PackageAndTestables, cargo_opts, package_and_testables},
 };
 
 #[derive(Debug, Clone)]
@@ -72,7 +73,7 @@ pub struct Specific {
     pub name: Option<String>,
 }
 
-const TESTABLE: &[&str] = &["test", "lib", "proc-macro"];
+const TESTABLE: &[TargetKind] = &[TargetKind::Test, TargetKind::Lib, TargetKind::ProcMacro];
 
 fn complete_subtest_name(input: &str, current_test: Option<Exec>) -> Vec<(String, Option<String>)> {
     let current_test = match current_test {

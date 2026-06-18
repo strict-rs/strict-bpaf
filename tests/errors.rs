@@ -249,7 +249,10 @@ fn hidden_required_field_is_valid_but_strange() {
 
     let r = parser.run_inner(&[]).unwrap_err().unwrap_stderr();
 
-    assert_eq!(r, "parser requires an extra flag, argument or parameter, but its name is hidden by the author");
+    assert_eq!(
+        r,
+        "parser requires an extra flag, argument or parameter, but its name is hidden by the author"
+    );
 }
 
 #[test]

@@ -18,5 +18,6 @@ pub fn options() -> OptionParser<Options> {
 
 fn main() {
     let opts = options().run();
-    println!("{opts:?}");
+    println!("user: {}", opts.user);
+    println!("appname: {}", opts.appname);
 }

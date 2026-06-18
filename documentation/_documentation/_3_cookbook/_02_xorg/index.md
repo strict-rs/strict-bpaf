@@ -8,7 +8,7 @@ The example implements the following parsers:
 - enable or disable an extension using `+ext name` and `-ext name` like syntax
 - enable or disable specific extensions with syntax like `-xinerama` or `+backing`
 
-Both parsers use [`any`] with [`ParseAny::anywhere`]
+Both parsers use [`any`] with [`anywhere`](crate::Cx::anywhere)
 
 
 #![cfg_attr(not(doctest), doc = include_str!("docs2/xorg.md"))]

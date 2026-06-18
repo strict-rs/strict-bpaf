@@ -1,7 +1,7 @@
 use syn::{
-    parenthesized,
+    Attribute, Expr, LitChar, LitStr, Result, parenthesized,
     parse::{Parse, ParseStream},
-    token, Attribute, Expr, LitChar, LitStr, Result,
+    token,
 };
 
 pub(crate) fn parse_arg<T: Parse>(input: ParseStream) -> Result<T> {
@@ -114,7 +114,7 @@ fn check_to_snake_case() {
 ///   ["foo", "bar"] => ["foo\nbar"]
 /// - single empty lines are stripped and used to represent logical blocks:
 ///   ["foo", "bar", "", "baz"] => ["foo\nbar", "baz"]
-/// strip single empty lines,
+///   strip single empty lines,
 pub(crate) struct LineIter<'a> {
     strings: std::str::Lines<'a>,
     prev_empty: bool,
@@ -137,11 +137,7 @@ impl<'a> LineIter<'a> {
             }
             res.push_str(&t);
         }
-        if res.is_empty() {
-            None
-        } else {
-            Some(res)
-        }
+        if res.is_empty() { None } else { Some(res) }
     }
 }
 

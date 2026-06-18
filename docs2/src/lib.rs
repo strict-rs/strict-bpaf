@@ -119,7 +119,15 @@ $ app {all_args}<br>
 ",
             buf.render_html(true, true)
         )?,
-        Err(ParseFailure::Completion(_)) => todo!(),
+        Err(ParseFailure::Completion(s)) => writeln!(
+            res,
+            "
+<div class='bpaf-doc'>
+$ app {all_args}<br>
+{s}
+</div>
+"
+        )?,
     };
 
     Ok(())

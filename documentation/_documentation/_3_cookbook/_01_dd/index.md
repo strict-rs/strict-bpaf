@@ -7,7 +7,7 @@ example `if=` or `of=` and suffix is parsed with usual [`FromStr`](std::str::Fro
 The function `tag` serves this purpose. It performs the following steps:
 
 - consume any item that starts with a prefix at any argument position with [`any`] and
-  [`ParseAny::anywhere`]
+  [`anywhere`](crate::Cx::anywhere)
 - attaches help message and custom metadata to make `--help` friendlier
 - parses suffix with [`Parser::parse`]
 

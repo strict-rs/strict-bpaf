@@ -52,7 +52,7 @@ In usage lines `collect` items are indicated with `...`
 
 <div class='bpaf-doc'>
 $ app --help<br>
-<p><b>Usage</b>: <tt><b>app</b></tt> <tt><b>--argument</b></tt>=<tt><i>ARG</i></tt>... [<tt><b>--switch</b></tt>]...</p><p><div>
+<p><b>Usage</b>: <tt><b>app</b></tt> [<tt><b>--argument</b></tt>=<tt><i>ARG</i></tt>]... [<tt><b>--switch</b></tt>]...</p><p><div>
 <b>Available options:</b></div><dl><dt><tt><b>    --argument</b></tt>=<tt><i>ARG</i></tt></dt>
 <dd>important argument</dd>
 <dt><tt><b>    --switch</b></tt></dt>
@@ -87,9 +87,9 @@ Options { argument: {10, 20}, switches: {false} }
 
 
 If there's no matching parameters - it would produce an empty set. Note, in case of
-[`switch`](NamedArg::switch) parser or other parsers that can succeed without consuming anything
+[`switch`](crate::Cx::switch) parser or other parsers that can succeed without consuming anything
 it would capture that value so `many` captures the first one of those.
-You can use [`req_flag`](NamedArg::req_flag) to avoid that.
+You can use [`req_flag`](crate::Cx::req_flag) to avoid that.
 
 
 <div class='bpaf-doc'>

@@ -1,7 +1,23 @@
-use crate::Top;
 use pretty_assertions::assert_eq;
-use quote::{quote, ToTokens};
+use quote::{ToTokens, quote};
 use syn::parse_quote;
+
+/// Test harness: capture a whole derive input and run it through the real
+/// `parse → lower → codegen` pipeline, so these byte-identical snapshots verify the new pipeline
+/// (the parity oracle) rather than any retained legacy type.
+struct Top(proc_macro2::TokenStream);
+
+impl syn::parse::Parse for Top {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        Ok(Top(input.parse()?))
+    }
+}
+
+impl ToTokens for Top {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        crate::expand(self.0.clone()).to_tokens(tokens);
+    }
+}
 
 #[test]
 fn cargo_command_helper() {

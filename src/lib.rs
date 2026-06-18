@@ -40,19 +40,18 @@
 //! Both APIs can achieve the same results, you can use one that better suits your needs. You can
 //! find documentation with more examples following those links.
 //!
-//! - For an argument with a name you define [`NamedArg`] using a combination of [`short`],
-//!   [`long`] and [`env`](crate::env()). At the same time you can attach
-//!   [`help`](NamedArg::help).
-//! - [`NamedArg::switch`] - simple switch that returns `true` if it's present on a command
-//!   line and `false` otherwise.
-//! - [`NamedArg::flag`] - a variant of `switch` that lets you return one of two custom
-//!   values, for example `Color::On` and `Color::Off`.
-//! - [`NamedArg::req_flag`] - a variant of `switch` that only only succeeds when it's name
-//!   is present on a command line
-//! - [`NamedArg::argument`] - named argument containing a value, you can further
-//!   customize it with [`adjacent`](crate::parsers::ParseArgument::adjacent)
+//! - For an argument with a name you start a [`Cx<Named>`](Cx) builder from a combination of
+//!   [`short`], [`long`] and [`env`](crate::env()). At the same time you can attach [`help`](Cx).
+//! - [`switch`](Cx::switch) - simple switch that returns `true` if it's present on a command line
+//!   and `false` otherwise.
+//! - [`flag`](Cx::flag) - a variant of `switch` that lets you return one of two custom values,
+//!   for example `Color::On` and `Color::Off`.
+//! - [`req_flag`](Cx::req_flag) - a variant of `switch` that only succeeds when its name is
+//!   present on a command line
+//! - [`argument`](Cx::argument) - named argument containing a value, you can further customize
+//!   it with [`adjacent`](Cx)
 //! - [`positional`] - positional argument, you can further customize it with
-//!   [`strict`](ParsePositional::strict)
+//!   [`strict`](Cx::strict)
 //! - [`OptionParser::command`] - subcommand parser.
 //! - [`any`] and its specialized version [`literal`] are escape hatches that can parse anything
 //!   not fitting into usual classification.
@@ -65,22 +64,20 @@
 //! value produced by [`FromStr`] trait, etc. You can further transform it by chaining methods from
 //! [`Parser`] trait, some of those methods are applied automagically if you are using derive API.
 //!
-//! `bpaf` distinguishes two types of parse failures - "value is absent" and
-//! "value is present but invalid", most parsers listed in this section only handle the first
-//! type of failure by default, but you can use their respective `catch` method to handle the later
-//! one.
+//! `bpaf` distinguishes two types of parse failures - "value is absent" and "value is present but
+//! invalid", most parsers listed in this section only handle the first type of failure by default,
+//! but you can use their respective `catch` method to handle the later one.
 //!
 //! - [`fallback`](Parser::fallback) and [`fallback_with`](Parser::fallback_with) - return a
-//!   different value if parser fails to find what it is looking for. Generated help for former
-//!   can be updated to include default value using
-//!   [`display_fallback`](ParseFallback::display_fallback),
-//!   [`debug_fallback`](ParseFallback::debug_fallback), or
-//!   [`format_fallback`](ParseFallback::format_fallback).
+//!   different value if parser fails to find what it is looking for. Generated help for former can
+//!   be updated to include default value using [`display_fallback`](Cx), [`debug_fallback`](Cx), or
+//!   [`format_fallback`](Cx).
 //! - [`optional`](Parser::optional) - return `None` if value is missing instead of failing, see
-//!   also [`catch`](ParseOptional::catch) .
+//!   also [`catch`](Cx).
 //! - [`many`](Parser::many), [`some`](Parser::some) and [`collect`](Parser::collect) - collect
-//!   multiple values into a collection, usually a vector, see their respective
-//!   [`catch`](ParseMany::catch), [`catch`](ParseSome::catch) and [`catch`](ParseCollect::catch).
+//!   multiple values into a collection, usually a vector; bound the count with
+//!   [`take`](Parser::take), [`at_least`](Parser::at_least) or [`in_range`](Parser::in_range), and
+//!   recover from a partially consumed invalid value with [`catch`](Cx).
 //! - [`map`](Parser::map), [`parse`](Parser::parse) and [`guard`](Parser::guard) - transform
 //!   and/or validate value produced by a parser
 //! - [`to_options`](Parser::to_options) - finalize the parser and prepare to run it
@@ -95,14 +92,16 @@
 //! All fields in a struct needs to be successfully parsed in order for the parser to succeed
 //! and only one variant from enum will consume its values at a time.
 //!
-//! You can use [`adjacent`](ParseCon::adjacent) annotation to parse multiple flags as an adjacent
-//! group allowing for more unusual scenarios such as multiple value arguments or chained commands.
+//! You can use the [`adjacent`](Cx) annotation to parse multiple flags as an adjacent group allowing for
+//! more unusual scenarios such as multiple value arguments or chained commands, or [`start_adjacent`](Cx::start_adjacent)
+//! for a left-anchored group that must begin at the current position with nothing unparsed to its
+//! left.
 //!
 //! ## Improving user experience
 //!
-//! `bpaf` would use doc comments on fields and structures in derive mode and and values passed
-//! in various `help` methods to generate `--help` documentation, you can further improve it
-//! using those methods:
+//! `bpaf` would use doc comments on fields and structures in derive mode and and values passed in
+//! various `help` methods to generate `--help` documentation, you can further improve it using
+//! those methods:
 //!
 //! - [`hide_usage`](Parser::hide_usage) and [`hide`](Parser::hide) - hide the parser from
 //!   generated *Usage* line or whole generated help
@@ -119,9 +118,8 @@
 //! - [`complete`](Parser::complete) and [`complete_shell`](Parser::complete_shell)
 //!
 //! And finally you can generate documentation for command line in markdown, html and manpage
-//! formats using [`render_markdown`](OptionParser::render_markdown),
-//! [`render_html`](OptionParser::render_html) and [`render_manpage`](OptionParser::render_manpage),
-//! for more detailed info see [`doc`] module
+//! formats using [`render_markdown`](OptionParser::render_markdown), [`render_html`](OptionParser::render_html) and [`render_manpage`](OptionParser::render_manpage), for more detailed info see
+//! [`doc`] module
 //!
 //! ## Testing your parsers and running them
 //! - You can [`OptionParser::run`] the parser on the arguments passed on the command line
@@ -175,6 +173,7 @@ mod complete_gen;
 mod complete_run;
 #[cfg(feature = "autocomplete")]
 mod complete_shell;
+mod cx;
 pub mod doc;
 mod error;
 mod from_os_str;
@@ -189,22 +188,28 @@ mod structs;
 mod tests;
 
 pub mod parsers {
-    //! This module exposes parsers that accept further configuration with builder pattern
+    //! Inner parser-state markers that appear inside [`Cx`](crate::Cx) return types
     //!
-    //! In most cases you won't be using those names directly, they're only listed here to provide
-    //! access to documentation
+    //! In most cases you won't be using those names directly — the canonical handle is always
+    //! `Cx<…>` (or an erased `Box<dyn Parser<T>>`). They are listed here so concrete `Cx<…>`
+    //! types can be named when needed.
     #[cfg(feature = "autocomplete")]
-    #[doc(inline)]
-    pub use crate::complete_shell::ParseCompShell;
-    #[doc(inline)]
-    pub use crate::params::{
-        NamedArg, ParseAny, ParseArgument, ParseCommand, ParseFlag, ParsePositional,
-    };
-    #[doc(inline)]
+    pub use crate::complete_shell::CompleteShell;
+    pub use crate::params::{Anything, Argument, Command, Flag, Named, Positional};
+    #[cfg(feature = "autocomplete")]
+    pub use crate::structs::Complete;
     pub use crate::structs::{
-        ParseCollect, ParseCon, ParseCount, ParseFallback, ParseFallbackWith, ParseLast, ParseMany,
-        ParseOptional, ParseSome,
+        Adjacent, Alt, Con, Count, Fail, Fallback, FallbackWith, GroupHelp, Guard, Hide, Last,
+        Many, Map, Optional, Parsed, Pure, PureWith, StartAdjacent, Usage, WithGroupHelp,
     };
+
+    /// Deprecated alias for `Cx<Named>` — the builder produced by [`short`](crate::short) / [`long`](crate::long) / [`env`](crate::env()).
+    #[doc(hidden)]
+    #[deprecated(
+        since = "0.10.0",
+        note = "`NamedArg` is now `Cx<Named>`; name it as `Cx<Named>`"
+    )]
+    pub type NamedArg = crate::cx::Cx<Named>;
 }
 
 // -------------------------------------------------------------------
@@ -213,32 +218,31 @@ pub mod parsers {
 pub use crate::{
     args::Args,
     buffer::Doc,
+    cx::{Cx, cx},
     error::{MessageStream, ParseFailure, RenderedParseFailure},
     info::OptionParser,
 };
 
 #[doc(hidden)]
 // used by construct macro, not part of public API
-pub use crate::{args::State, error::Error, meta::Meta, structs::ParseCon};
+pub use crate::{args::State, cx::Boxed, error::Error, meta::Meta, structs::Con};
 
 use std::{marker::PhantomData, str::FromStr};
 
 use crate::{
     buffer::{MetaInfo, Style},
     item::Item,
-    params::build_positional,
-    parsers::{NamedArg, ParseAny, ParseCommand, ParsePositional},
+    params::{Anything, Command, Named, Positional, build_positional},
     structs::{
-        ParseCollect, ParseCount, ParseFail, ParseFallback, ParseFallbackWith, ParseGroupHelp,
-        ParseGuard, ParseHide, ParseLast, ParseMany, ParseMap, ParseOptional, ParseOrElse,
-        ParsePure, ParsePureWith, ParseSome, ParseUsage, ParseWith, ParseWithGroupHelp,
+        Alt, Count, Fail, Fallback, FallbackWith, GroupHelp, Guard, Hide, Last, Many, Map,
+        Optional, Parsed, Pure, PureWith, Usage, WithGroupHelp,
     },
 };
 
 #[cfg(feature = "autocomplete")]
 pub use crate::complete_shell::ShellComp;
 #[cfg(feature = "autocomplete")]
-use structs::ParseComp;
+use structs::Complete;
 
 #[doc(inline)]
 #[cfg(feature = "bpaf_derive")]
@@ -302,9 +306,9 @@ pub use bpaf_derive::Bpaf;
 /// function and `b` corresponds to a variable name. Note parens in `a()`, you must to use them to
 /// indicate function parsers.
 ///
-/// Inside the parens you can put a whole expression to use instead of
-/// having to define them in advance: `a(positional::<String>("POS"))`. Probably a good idea to use this
-/// approach only for simple parsers.
+/// Inside the parens you can put a whole expression to use instead of having to define them in
+/// advance: `a(positional::<String>("POS"))`. Probably a good idea to use this approach only for
+/// simple parsers.
 ///
 /// ```rust
 /// # use bpaf::*;
@@ -377,8 +381,8 @@ pub use bpaf_derive::Bpaf;
 ///
 /// # Derive usage
 ///
-/// `bpaf` would combine fields of struct or enum constructors sequentially and enum
-/// variants in parallel.
+/// `bpaf` would combine fields of struct or enum constructors sequentially and enum variants in
+/// parallel.
 /// ```rust
 /// # use bpaf::*;
 /// // to satisfy this parser user needs to pass both -a and -b
@@ -468,7 +472,11 @@ macro_rules! construct {
             ::std::result::Result::Ok::<_, $crate::Error>
                 ($crate::construct!(@make $ty [$front $($fields)*]))
         };
-        $crate::ParseCon { inner, meta, failfast: false }
+        $crate::Cx::new($crate::Con {
+            inner,
+            meta,
+            failfast: false,
+        })
     }};
 }
 
@@ -476,28 +484,31 @@ macro_rules! construct {
 ///
 /// # Overview
 ///
-/// It's best to think of an object implementing [`Parser`] trait as a container with a value
-/// inside that is composable with other `Parser` containers using [`construct!`] and the only
-/// way to extract this value is by transforming it to [`OptionParser`] with
-/// [`to_options`](Parser::to_options) and running it with [`run`](OptionParser::run). At which
-/// point you either get your value out or `bpaf` would generate a message describing a problem
-/// (missing argument, validation failure, user requested help, etc) and the program would
-/// exit.
+/// It's best to think of an object implementing [`Parser`] trait as a container with a value inside
+/// that is composable with other `Parser` containers using [`construct!`] and the only way to
+/// extract this value is by transforming it to [`OptionParser`] with [`to_options`](Parser::to_options) and running it
+/// with [`run`](OptionParser::run). At which point you either get your value out or `bpaf` would generate a message
+/// describing a problem (missing argument, validation failure, user requested help, etc) and the
+/// program would exit.
 ///
-/// Values inside can be of any type for as long as they implement `Debug`, `Clone` and
-/// there are no lifetimes other than static.
+/// Every constructor (such as [`short`] or [`positional`]) and every combinator (such as [`many`](Parser::many) or
+/// [`map`](Parser::map)) returns some [`Cx<…>`](Cx): a builder that becomes a `Parser` once it holds a finished value.
+/// You rarely name these types — chain methods, combine several finished parsers with
+/// [`construct!`], then call [`to_options`](Parser::to_options) to get something you can run.
 ///
-/// When consuming the values you can jump straight to a value that implements
-/// [`FromStr`] trait and then transform it into something that your program would use. Alternatively,
-/// you can consume either `String` or `OsString` and parse that by hand. It's better to perform
-/// as much parsing and validation inside the `Parser` as possible so the program itself gets
-/// strictly typed and correct value while the user gets immediate feedback on what's wrong with the
-/// arguments they pass.
+/// Values inside can be of any type for as long as they implement `Debug`, `Clone` and there are no
+/// lifetimes other than static.
+///
+/// When consuming the values you can jump straight to a value that implements [`FromStr`] trait and
+/// then transform it into something that your program would use. Alternatively, you can consume
+/// either `String` or `OsString` and parse that by hand. It's better to perform as much parsing and
+/// validation inside the `Parser` as possible so the program itself gets strictly typed and correct
+/// value while the user gets immediate feedback on what's wrong with the arguments they pass.
 ///
 /// Order of operations matters, each subsequent parser gets the output of the earlier one. Both
-/// parsers `a` and `b` would consume multiple numeric values, each less than 10, but `a`
-/// validates a single value and then consumes multiple of them already validated, while `b` first
-/// consumes and then performs validation. The former approach is usually more readable.
+/// parsers `a` and `b` would consume multiple numeric values, each less than 10, but `a` validates
+/// a single value and then consumes multiple of them already validated, while `b` first consumes
+/// and then performs validation. The former approach is usually more readable.
 /// ```rust
 /// # use bpaf::*;
 /// # fn simple() {
@@ -556,10 +567,9 @@ macro_rules! construct {
 /// # Derive specific considerations
 ///
 /// Every method defined on this trait belongs to the `postprocessing` section of the field
-/// annotation. `bpaf` would try to figure out what chain to use for as long as there are no
-/// options changing the type: you can use [`fallback`](Parser::fallback_with),
-/// [`fallback_with`](Parser::fallback_with), [`guard`](Parser::guard), [`hide`](Parser::hide`) and
-/// [`group_help`](Parser::group_help) but not the rest of them.
+/// annotation. `bpaf` would try to figure out what chain to use for as long as there are no options
+/// changing the type: you can use [`fallback`](Parser::fallback), [`fallback_with`](Parser::fallback_with), [`guard`](Parser::guard), [`hide`](Parser::hide) and [`group_help`](Parser::group_help) but
+/// not the rest of them.
 ///
 /// ```rust
 /// # use bpaf::*;
@@ -587,6 +597,11 @@ macro_rules! construct {
 ///     number_6: Option<u32>,
 /// }
 /// ```
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` is not a finished parser yet",
+    label = "incomplete parser",
+    note = "pick a consumer to finish a named builder: `.switch()`, `.flag(present, absent)`, `.req_flag(present)`, or `.argument::<T>(\"METAVAR\")`; compose finished parsers with `construct!`"
+)]
 pub trait Parser<T> {
     /// Evaluate inner function
     ///
@@ -608,59 +623,64 @@ pub trait Parser<T> {
     // {{{ many
     /// Consume zero or more items from a command line and collect them into a [`Vec`]
     ///
-    /// `many` preserves any parsing failures and propagates them outwards, with an extra
-    /// [`catch`](ParseMany::catch) statement you can instead stop at the first value
-    /// that failed to parse and ignore it and all the subsequent ones.
+    /// `many` preserves any parsing failures and propagates them outwards, with an extra [`catch`](Cx)
+    /// statement you can instead stop at the first value that failed to parse and ignore it and all
+    /// the subsequent ones.
     ///
     /// `many` will collect at most one result that does not consume anything from the argument
     /// list allowing using it in combination with any parsers with a fallback. After the first
     /// one, it will keep collecting the results as long as they consume something.
     ///
-    /// For derive usage `bpaf` would insert implicit `many` when the resulting type is a
-    /// vector.
+    /// For derive usage `bpaf` would insert implicit `many` when the resulting type is a vector.
     ///
     #[cfg_attr(not(doctest), doc = include_str!("docs2/many.md"))]
     ///
     /// # See also
-    /// [`some`](Parser::some) also collects results to a vector but requires at least one
-    /// element to succeed, [`collect`](Parser::collect) collects results into a [`FromIterator`]
-    /// structure
-    fn many(self) -> ParseMany<Self>
+    /// [`some`](Parser::some) also collects results to a vector but requires at least one element to succeed,
+    /// [`collect`](Parser::collect) collects results into a [`FromIterator`] structure
+    fn many(self) -> Cx<Many<Self, Vec<T>, T>>
     where
-        Self: Sized,
+        Self: Sized + Parser<T>,
     {
-        ParseMany {
+        Cx(Many {
             inner: self,
+            error: "",
+            at_least: 0,
+            at_most: u32::MAX,
             catch: false,
-        }
+            ctx: PhantomData,
+        })
     }
     // }}}
 
     // {{{ collect
     /// Transform parser into a collection parser
     ///
-    /// A generic variant of [`many`](Parser::many), instead of collecting into a vector
-    /// it collects into any collection that implements [`FromIterator`] trait
+    /// A generic variant of [`many`](Parser::many), instead of collecting into a vector it collects into any
+    /// collection that implements [`FromIterator`] trait
     ///
-    /// `collect` preserves any parsing failures and propagates them outwards, with extra
-    /// [`catch`](ParseCollect::catch) statement you can instead stop at the first value
-    /// that failed to parse and ignore it and all the subsequent ones.
+    /// `collect` preserves any parsing failures and propagates them outwards, with extra [`catch`](Cx)
+    /// statement you can instead stop at the first value that failed to parse and ignore it and all
+    /// the subsequent ones.
     ///
     #[cfg_attr(not(doctest), doc = include_str!("docs2/collect.md"))]
     ///
     /// `collect` will collect at most one result that does not consume anything from the argument
     /// list allowing using it in combination of any parsers with a fallback. After the first one
     /// it will keep collecting the results as long as they consume something.
-    fn collect<C>(self) -> ParseCollect<Self, C, T>
+    fn collect<C>(self) -> Cx<Many<Self, C, T>>
     where
         C: FromIterator<T>,
-        Self: Sized,
+        Self: Sized + Parser<T>,
     {
-        ParseCollect {
+        Cx(Many {
             inner: self,
+            error: "",
+            at_least: 0,
+            at_most: u32::MAX,
             catch: false,
             ctx: PhantomData,
-        }
+        })
     }
     // }}}
 
@@ -669,9 +689,9 @@ pub trait Parser<T> {
     ///
     /// Takes a string used as an error message if there are no specified parameters
     ///
-    /// `some` preserves any parsing failures and propagates them outwards, with an extra
-    /// [`catch`](ParseSome::catch) statement you can instead stop at the first value
-    /// that failed to parse and ignore it and all the subsequent ones.
+    /// `some` preserves any parsing failures and propagates them outwards, with an extra [`catch`](Cx)
+    /// statement you can instead stop at the first value that failed to parse and ignore it and all
+    /// the subsequent ones.
     ///
     /// `some` will collect at most one result that does not consume anything from the argument
     /// list allowing using it in combination with any parsers with a fallback. After the first
@@ -680,64 +700,134 @@ pub trait Parser<T> {
     #[cfg_attr(not(doctest), doc = include_str!("docs2/some.md"))]
     ///
     /// # See also
-    /// [`many`](Parser::many) also collects results to a vector but succeeds with
-    /// no matching values. [`collect`](Parser::collect) collects results into a [`FromIterator`]
-    /// structure
+    /// [`many`](Parser::many) also collects results to a vector but succeeds with no matching values. [`collect`](Parser::collect)
+    /// collects results into a [`FromIterator`] structure
     #[must_use]
-    fn some(self, message: &'static str) -> ParseSome<Self>
+    fn some(self, message: &'static str) -> Cx<Many<Self, Vec<T>, T>>
     where
         Self: Sized + Parser<T>,
     {
-        ParseSome {
+        Cx(Many {
             inner: self,
-            message,
+            error: message,
+            at_least: 1,
+            at_most: u32::MAX,
             catch: false,
-        }
+            ctx: PhantomData,
+        })
     }
     // }}}
+
+    /// Consume at most `at_most` items from a command line and collect them into a [`Vec`]
+    ///
+    /// A bounded variant of [`many`](Parser::many) that stops after `at_most` successes.
+    #[must_use]
+    fn take(self, at_most: u32) -> Cx<Many<Self, Vec<T>, T>>
+    where
+        Self: Sized + Parser<T>,
+    {
+        Cx(Many {
+            inner: self,
+            error: "",
+            at_least: 0,
+            at_most,
+            catch: false,
+            ctx: PhantomData,
+        })
+    }
+
+    /// Consume at least `at_least` items from a command line and collect them into a [`Vec`]
+    ///
+    /// Takes a string used as the error message when fewer than `at_least` items are available.
+    #[must_use]
+    fn at_least(self, at_least: u32, message: &'static str) -> Cx<Many<Self, Vec<T>, T>>
+    where
+        Self: Sized + Parser<T>,
+    {
+        Cx(Many {
+            inner: self,
+            error: message,
+            at_least,
+            at_most: u32::MAX,
+            catch: false,
+            ctx: PhantomData,
+        })
+    }
+
+    /// Consume a number of items inside `range` and collect them into a [`Vec`]
+    ///
+    /// Takes a string used as the error message when fewer than the range's lower bound are
+    /// available.
+    #[must_use]
+    fn in_range(
+        self,
+        range: impl std::ops::RangeBounds<u32>,
+        message: &'static str,
+    ) -> Cx<Many<Self, Vec<T>, T>>
+    where
+        Self: Sized + Parser<T>,
+    {
+        let at_least = match range.start_bound() {
+            std::ops::Bound::Included(&n) => n,
+            std::ops::Bound::Excluded(&n) => n.saturating_add(1),
+            std::ops::Bound::Unbounded => 0,
+        };
+        let at_most = match range.end_bound() {
+            std::ops::Bound::Included(&n) => n,
+            std::ops::Bound::Excluded(&n) => n.saturating_sub(1),
+            std::ops::Bound::Unbounded => u32::MAX,
+        };
+        Cx(Many {
+            inner: self,
+            error: message,
+            at_least,
+            at_most,
+            catch: false,
+            ctx: PhantomData,
+        })
+    }
 
     // {{{ optional
     /// Turn a required argument into an optional one
     ///
-    /// `optional` converts any missing items into `None` and passes the remaining parsing
-    /// failures untouched. With an extra [`catch`](ParseOptional::catch) statement, you can handle
-    /// those failures too.
+    /// `optional` converts any missing items into `None` and passes the remaining parsing failures
+    /// untouched. With an extra [`catch`](Cx) statement, you can handle those failures too.
     ///
     /// # Derive usage
     ///
-    /// By default, `bpaf` would automatically use optional for fields of type `Option<T>`,
-    /// for as long as it's not prevented from doing so by present postprocessing options.
-    /// But it's also possible to specify it explicitly.
+    /// By default, `bpaf` would automatically use optional for fields of type `Option<T>`, for as
+    /// long as it's not prevented from doing so by present postprocessing options. But it's also
+    /// possible to specify it explicitly.
     ///
     #[cfg_attr(not(doctest), doc = include_str!("docs2/optional.md"))]
     ///
     #[must_use]
-    fn optional(self) -> ParseOptional<Self>
+    fn optional(self) -> Cx<Optional<Self>>
     where
         Self: Sized + Parser<T>,
     {
-        ParseOptional {
+        Cx(Optional {
             inner: self,
             catch: false,
-        }
+        })
     }
     // }}}
 
     #[must_use]
     /// Count how many times the inner parser succeeds, and return that number.
     ///
-    /// When you are dealing with a parser that can succeed without consuming
-    /// anything from a command line - `bpaf` will count first such success as well.
+    /// When you are dealing with a parser that can succeed without consuming anything from a
+    /// command line - `bpaf` will count first such success as well.
     ///
     #[cfg_attr(not(doctest), doc = include_str!("docs2/count.md"))]
-    fn count(self) -> ParseCount<Self, T>
+    fn count(self) -> Cx<Count<Self, T>>
     where
         Self: Sized + Parser<T>,
     {
-        ParseCount {
+        Cx(Count {
             inner: self,
             ctx: PhantomData,
-        }
+        })
     }
 
     #[must_use]
@@ -745,32 +835,31 @@ pub trait Parser<T> {
     ///
     /// You can use this to allow users to pick contradicting options
     #[cfg_attr(not(doctest), doc = include_str!("docs2/last.md"))]
-    fn last(self) -> ParseLast<Self>
+    fn last(self) -> Cx<Last<Self>>
     where
         Self: Sized + Parser<T>,
     {
-        ParseLast { inner: self }
+        Cx(Last { inner: self })
     }
 
     // parse
     // {{{ parse
     /// Apply a failing transformation to a contained value
     ///
-    /// Transformation preserves the present/absent state of the value: to parse an optional value you
-    /// can either first try to `parse` it and then mark it as [`optional`](Parser::optional) or first
-    /// deal with the optionality and then parse a value wrapped in [`Option`]. In most cases
-    /// the former approach is more concise.
-    ///
-    /// Similarly, it is possible to parse multiple items with [`many`](Parser::many) or
-    /// [`some`](Parser::some) by either parsing a single item first and then turning it into a [`Vec`]
-    /// or collecting them into a [`Vec`] first and then parsing the whole vector. The former approach
+    /// Transformation preserves the present/absent state of the value: to parse an optional value
+    /// you can either first try to `parse` it and then mark it as [`optional`](Parser::optional) or first deal with the
+    /// optionality and then parse a value wrapped in [`Option`]. In most cases the former approach
     /// is more concise.
     ///
-    /// This is a most general of transforming parsers and you can express
-    /// [`map`](Parser::map) and [`guard`](Parser::guard) in terms of it.
+    /// Similarly, it is possible to parse multiple items with [`many`](Parser::many) or [`some`](Parser::some) by either parsing a
+    /// single item first and then turning it into a [`Vec`] or collecting them into a [`Vec`] first
+    /// and then parsing the whole vector. The former approach is more concise.
     ///
-    /// Examples are a bit artificial, to parse a value from a string you can specify
-    /// the type directly in the `argument`'s turbofish and then apply `map`.
+    /// This is a most general of transforming parsers and you can express [`map`](Parser::map) and [`guard`](Parser::guard) in
+    /// terms of it.
+    ///
+    /// Examples are a bit artificial, to parse a value from a string you can specify the type
+    /// directly in the `argument`'s turbofish and then apply `map`.
     ///
     /// # Derive usage:
     /// `parse` takes a single parameter: function name to call. Function type should match
@@ -778,19 +867,19 @@ pub trait Parser<T> {
     ///
     #[cfg_attr(not(doctest), doc = include_str!("docs2/parse.md"))]
     ///
-    fn parse<F, R, E>(self, f: F) -> ParseWith<T, Self, F, E, R>
+    fn parse<F, R, E>(self, f: F) -> Cx<Parsed<T, Self, F, E, R>>
     where
         Self: Sized + Parser<T>,
         F: Fn(T) -> Result<R, E>,
         E: ToString,
     {
-        ParseWith {
+        Cx(Parsed {
             inner: self,
             inner_res: PhantomData,
             parse_fn: f,
             res: PhantomData,
             err: PhantomData,
-        }
+        })
     }
     // }}}
 
@@ -805,17 +894,17 @@ pub trait Parser<T> {
     ///
     #[cfg_attr(not(doctest), doc = include_str!("docs2/map.md"))]
     ///
-    fn map<F, R>(self, map: F) -> ParseMap<T, Self, F, R>
+    fn map<F, R>(self, map: F) -> Cx<Map<T, Self, F, R>>
     where
         Self: Sized + Parser<T>,
         F: Fn(T) -> R + 'static,
     {
-        ParseMap {
+        Cx(Map {
             inner: self,
             inner_res: PhantomData,
             map_fn: map,
             res: PhantomData,
-        }
+        })
     }
     // }}}
 
@@ -831,16 +920,16 @@ pub trait Parser<T> {
     #[cfg_attr(not(doctest), doc = include_str!("docs2/guard.md"))]
     ///
     #[must_use]
-    fn guard<F>(self, check: F, message: &'static str) -> ParseGuard<Self, F>
+    fn guard<F>(self, check: F, message: &'static str) -> Cx<Guard<Self, F>>
     where
         Self: Sized + Parser<T>,
         F: Fn(&T) -> bool,
     {
-        ParseGuard {
+        Cx(Guard {
             inner: self,
             check,
             message,
-        }
+        })
     }
     // }}}
 
@@ -853,22 +942,20 @@ pub trait Parser<T> {
     #[cfg_attr(not(doctest), doc = include_str!("docs2/dis_fallback.md"))]
     ///
     /// # See also
-    /// [`fallback_with`](Parser::fallback_with) would allow to try to fallback to a value that
-    /// comes from a failing computation such as reading a file. By default, the fallback value will
-    /// not be shown in the `--help` output; you can change that by using
-    /// [`display_fallback`](ParseFallback::display_fallback),
-    /// [`debug_fallback`](ParseFallback::debug_fallback), or
-    /// [`format_fallback`](ParseFallback::format_fallback).
+    /// [`fallback_with`](Parser::fallback_with) would allow to try to fallback to a value that comes from a failing
+    /// computation such as reading a file. By default, the fallback value will not be shown in the
+    /// `--help` output; you can change that by using [`display_fallback`](Cx), [`debug_fallback`](Cx), or
+    /// [`format_fallback`](Cx).
     #[must_use]
-    fn fallback(self, value: T) -> ParseFallback<Self, T>
+    fn fallback(self, value: T) -> Cx<Fallback<Self, T>>
     where
         Self: Sized + Parser<T>,
     {
-        ParseFallback {
+        Cx(Fallback {
             inner: self,
             value,
             value_str: String::new(),
-        }
+        })
     }
     // }}}
 
@@ -880,26 +967,23 @@ pub trait Parser<T> {
     #[cfg_attr(not(doctest), doc = include_str!("docs2/dis_fallback_with.md"))]
     ///
     /// # See also
-    /// [`fallback`](Parser::fallback) implements similar logic expect that failures aren't expected.
-    /// By default, the fallback value will
-    /// not be shown in the `--help` output; you can change that by using
-    /// [`display_fallback`](ParseFallbackWith::display_fallback),
-    /// [`debug_fallback`](ParseFallbackWith::debug_fallback), or
-    /// [`format_fallback`](ParseFallbackWith::format_fallback).
+    /// [`fallback`](Parser::fallback) implements similar logic except that failures aren't expected. By default, the
+    /// fallback value will not be shown in the `--help` output; you can change that by using
+    /// [`display_fallback`](Cx), [`debug_fallback`](Cx), or [`format_fallback`](Cx).
     #[must_use]
-    fn fallback_with<F, E>(self, fallback: F) -> ParseFallbackWith<T, Self, F, E>
+    fn fallback_with<F, E>(self, fallback: F) -> Cx<FallbackWith<T, Self, F, E>>
     where
         Self: Sized + Parser<T>,
         F: Fn() -> Result<T, E>,
         E: ToString,
     {
-        ParseFallbackWith {
+        Cx(FallbackWith {
             inner: self,
             inner_res: PhantomData,
             fallback,
             value_str: String::new(),
             err: PhantomData,
-        }
+        })
     }
     // }}}
 
@@ -945,8 +1029,8 @@ pub trait Parser<T> {
     ///
     /// # Derive usage:
     ///
-    /// `bpaf` translates enum into alternative combinations, different shapes of variants
-    /// produce different results.
+    /// `bpaf` translates enum into alternative combinations, different shapes of variants produce
+    /// different results.
     ///
     ///
     /// ```bpaf
@@ -971,24 +1055,24 @@ pub trait Parser<T> {
     ///
     /// # Performance
     ///
-    /// `bpaf` tries to evaluate both branches regardless of the successes to produce a
-    /// better error message for combinations of mutually exclusive parsers:
-    /// Suppose program accepts one of two mutually exclusive switches `-a` and `-b`
-    /// and both are present error message should point at the second flag
+    /// `bpaf` tries to evaluate both branches regardless of the successes to produce a better error
+    /// message for combinations of mutually exclusive parsers: Suppose program accepts one of two
+    /// mutually exclusive switches `-a` and `-b` and both are present error message should point at
+    /// the second flag
     #[doc(hidden)]
     #[deprecated(
         since = "0.5.0",
         note = "instead of a.or_else(b) you should use construct!([a, b])"
     )]
-    fn or_else<P>(self, alt: P) -> ParseOrElse<T>
+    fn or_else<P>(self, alt: P) -> Cx<Alt<T>>
     where
         Self: Sized + Parser<T> + 'static,
         P: Sized + Parser<T> + 'static,
     {
-        ParseOrElse {
+        Cx(Alt {
             this: Box::new(self),
             that: Box::new(alt),
-        }
+        })
     }
     // }}}
 
@@ -1001,11 +1085,11 @@ pub trait Parser<T> {
     ///
     #[cfg_attr(not(doctest), doc = include_str!("docs2/hide.md"))]
     ///
-    fn hide(self) -> ParseHide<Self>
+    fn hide(self) -> Cx<Hide<Self>>
     where
         Self: Sized + Parser<T>,
     {
-        ParseHide { inner: self }
+        Cx(Hide { inner: self })
     }
     // }}}
 
@@ -1013,62 +1097,62 @@ pub trait Parser<T> {
     ///
     /// Parsers hidden from usage will still show up in the available arguments list. Best used on
     /// optional things that augment the main application functionality but not define it.
-    /// Alternatively, you can use [`custom_usage`](Parser::custom_usage) to replace a single
-    /// option or a group of them with some other text.
+    /// Alternatively, you can use [`custom_usage`](Parser::custom_usage) to replace a single option or a group of them with
+    /// some other text.
     #[cfg_attr(not(doctest), doc = include_str!("docs2/hide_usage.md"))]
     #[must_use]
-    fn hide_usage(self) -> ParseUsage<Self>
+    fn hide_usage(self) -> Cx<Usage<Self>>
     where
         Self: Sized + Parser<T>,
     {
-        ParseUsage {
+        Cx(Usage {
             inner: self,
             usage: Doc::default(),
-        }
+        })
     }
 
     /// Customize how this parser looks like in the usage line
     ///
     #[cfg_attr(not(doctest), doc = include_str!("docs2/custom_usage.md"))]
     #[must_use]
-    fn custom_usage<M>(self, usage: M) -> ParseUsage<Self>
+    fn custom_usage<M>(self, usage: M) -> Cx<Usage<Self>>
     where
         M: Into<Doc>,
         Self: Sized + Parser<T>,
     {
-        ParseUsage {
+        Cx(Usage {
             inner: self,
             usage: usage.into(),
-        }
+        })
     }
 
     // {{{ group_help
     /// Attach a help message to a complex parser
     ///
-    /// `bpaf` inserts the group help message before the block with all the fields
-    /// from the inner parser and an empty line after the block.
+    /// `bpaf` inserts the group help message before the block with all the fields from the inner
+    /// parser and an empty line after the block.
     ///
     #[cfg_attr(not(doctest), doc = include_str!("docs2/group_help.md"))]
-    fn group_help<M: Into<Doc>>(self, message: M) -> ParseGroupHelp<Self>
+    fn group_help<M: Into<Doc>>(self, message: M) -> Cx<GroupHelp<Self>>
     where
         Self: Sized + Parser<T>,
     {
-        ParseGroupHelp {
+        Cx(GroupHelp {
             inner: self,
             message: message.into(),
-        }
+        })
     }
     // }}}
 
     /// Make a help message for a complex parser from its [`MetaInfo`]
     ///
     #[cfg_attr(not(doctest), doc = include_str!("docs2/with_group_help.md"))]
-    fn with_group_help<F>(self, f: F) -> ParseWithGroupHelp<Self, F>
+    fn with_group_help<F>(self, f: F) -> Cx<WithGroupHelp<Self, F>>
     where
         Self: Sized + Parser<T>,
         F: Fn(MetaInfo) -> Doc,
     {
-        ParseWithGroupHelp { inner: self, f }
+        Cx(WithGroupHelp { inner: self, f })
     }
 
     // {{{ comp
@@ -1076,12 +1160,12 @@ pub trait Parser<T> {
     ///
     /// Allows to generate autocompletion information for the shell. Completer places generated input
     /// in place of metavar placeholders, so running `completer` on something that doesn't have a
-    /// [`positional`] or an [`argument`](NamedArg::argument) doesn't make much sense.
+    /// [`positional`] or an [`argument`](Cx::argument) doesn't make much sense.
     ///
     /// Takes a function as a parameter that tries to complete partial input to a full one with an
     /// optional description. `bpaf` would substitute a current positional item or an argument with an empty
     /// string if a value isn't available yet so it's best to run `complete` where parsing can't fail:
-    /// right after [`argument`](NamedArg::argument) or [`positional`], but this isn't enforced.
+    /// right after [`argument`](Cx::argument) or [`positional`], but this isn't enforced.
     ///
     /// # Example
     /// ```console
@@ -1100,17 +1184,17 @@ pub trait Parser<T> {
     #[cfg_attr(not(doctest), doc = include_str!("docs2/derive_show_asm.md"))]
     ///
     #[cfg(feature = "autocomplete")]
-    fn complete<M, F>(self, op: F) -> ParseComp<Self, F>
+    fn complete<M, F>(self, op: F) -> Cx<Complete<Self, F>>
     where
         M: Into<String>,
         F: Fn(&T) -> Vec<(M, Option<M>)>,
         Self: Sized + Parser<T>,
     {
-        ParseComp {
+        Cx(Complete {
             inner: self,
             op,
             group: None,
-        }
+        })
     }
     // }}}
 
@@ -1118,12 +1202,11 @@ pub trait Parser<T> {
     /// Static shell completion
     ///
     /// Allows to ask existing shell completion to provide some information such as a file or
-    /// directory names or pass through existing shell completion scripts, see
-    /// [`ShellComp`](complete_shell::ShellComp) for accessible functionality
+    /// directory names or pass through existing shell completion scripts, see [`ShellComp`](complete_shell::ShellComp) for
+    /// accessible functionality
     ///
     /// Places function calls in place of metavar placeholder, so running `complete_shell` on
-    /// something that doesn't have a [`positional`] or [`argument`](NamedArg::argument) doesn't
-    /// make much sense.
+    /// something that doesn't have a [`positional`] or [`argument`](Cx::argument) doesn't make much sense.
     ///
     /// # Example
     /// ```console
@@ -1158,11 +1241,11 @@ pub trait Parser<T> {
     fn complete_shell(
         self,
         op: complete_shell::ShellComp,
-    ) -> crate::complete_shell::ParseCompShell<Self>
+    ) -> Cx<crate::complete_shell::CompleteShell<Self>>
     where
         Self: Sized + Parser<T>,
     {
-        crate::complete_shell::ParseCompShell { inner: self, op }
+        Cx(crate::complete_shell::CompleteShell { inner: self, op })
     }
     // }}}
 
@@ -1176,9 +1259,8 @@ pub trait Parser<T> {
     /// [`Parser`].
     ///
     /// In addition to `options` annotation, you can also specify either `version` or
-    /// `version(value)` annotation. The former uses version from `cargo`, later uses the
-    /// specified value which should be an expression of type `&'static str`, see
-    /// [`version`](OptionParser::version).
+    /// `version(value)` annotation. The former uses version from `cargo`, later uses the specified
+    /// value which should be an expression of type `&'static str`, see [`version`](OptionParser::version).
     ///
     #[cfg_attr(not(doctest), doc = include_str!("docs2/to_options.md"))]
     ///
@@ -1241,16 +1323,15 @@ pub trait Parser<T> {
 ///
 #[cfg_attr(not(doctest), doc = include_str!("docs2/pure.md"))]
 #[must_use]
-pub fn pure<T>(val: T) -> ParsePure<T> {
-    ParsePure(val)
+pub fn pure<T>(val: T) -> Cx<Pure<T>> {
+    Cx(Pure(val))
 }
 
 /// Wrap a calculated value into a `Parser`
 ///
-/// This parser represents a possibly failing equivalent to [`pure`].
-/// It produces `T` by invoking the provided callback without consuming anything from the command
-/// line, which can be useful with [`construct!`]. As with any parsers, `T` should be `Clone`
-/// and `Debug`.
+/// This parser represents a possibly failing equivalent to [`pure`]. It produces `T` by invoking
+/// the provided callback without consuming anything from the command line, which can be useful with
+/// [`construct!`]. As with any parsers, `T` should be `Clone` and `Debug`.
 ///
 /// Both [`pure`] and `pure_with` are designed to put values into structures, to generate fallback
 /// you should be using [`fallback`](Parser::fallback) and [`fallback_with`](Parser::fallback_with).
@@ -1258,18 +1339,18 @@ pub fn pure<T>(val: T) -> ParsePure<T> {
 /// See also [`pure`] for a pure computation that can't fail.
 ///
 #[cfg_attr(not(doctest), doc = include_str!("docs2/pure_with.md"))]
-pub fn pure_with<T, F, E>(val: F) -> ParsePureWith<T, F, E>
+pub fn pure_with<T, F, E>(val: F) -> Cx<PureWith<T, F, E>>
 where
     F: Fn() -> Result<T, E>,
     E: ToString,
 {
-    ParsePureWith(val)
+    Cx(PureWith(val))
 }
 
 /// Fail with a fixed error message
 ///
-/// This parser produces `T` of any type but instead of producing it when asked - it fails
-/// with a custom error message. Can be useful for creating custom logic
+/// This parser produces `T` of any type but instead of producing it when asked - it fails with a
+/// custom error message. Can be useful for creating custom logic
 ///
 /// # Combinatoric usage
 /// ```rust
@@ -1289,55 +1370,41 @@ where
 /// // succeeds
 /// ```
 #[must_use]
-pub fn fail<T>(msg: &'static str) -> ParseFail<T> {
-    ParseFail {
+pub fn fail<T>(msg: &'static str) -> Cx<Fail<T>> {
+    Cx(Fail {
         field1: msg,
         field2: PhantomData,
-    }
+    })
 }
 
-/// Parse a [`flag`](NamedArg::flag)/[`switch`](NamedArg::switch)/[`argument`](NamedArg::argument) that has a short name
+/// Parse a [`flag`](Cx::flag)/[`switch`](Cx::switch)/[`argument`](Cx::argument) that has a short name
 ///
-/// You can chain multiple [`short`](NamedArg::short), [`long`](NamedArg::long) and
-/// [`env`](NamedArg::env()) for multiple names. You can specify multiple names of the same type,
-///  `bpaf` would use items past the first one as hidden aliases.
+/// You can chain multiple [`short`](Cx), [`long`](Cx) and [`env`](Cx) for multiple names. You can specify multiple
+/// names of the same type, `bpaf` would use items past the first one as hidden aliases.
 #[cfg_attr(not(doctest), doc = include_str!("docs2/short_long_env.md"))]
 #[must_use]
-pub fn short(short: char) -> NamedArg {
-    NamedArg {
-        short: vec![short],
-        env: Vec::new(),
-        long: Vec::new(),
-        help: None,
-    }
+pub fn short(short: char) -> Cx<Named> {
+    Cx(Named::from_short(short))
 }
 
-/// Parse a [`flag`](NamedArg::flag)/[`switch`](NamedArg::switch)/[`argument`](NamedArg::argument) that has a long name
+/// Parse a [`flag`](Cx::flag)/[`switch`](Cx::switch)/[`argument`](Cx::argument) that has a long name
 ///
-/// You can chain multiple [`short`](NamedArg::short), [`long`](NamedArg::long) and
-/// [`env`](NamedArg::env()) for multiple names. You can specify multiple names of the same type,
-///  `bpaf` would use items past the first one as hidden aliases.
+/// You can chain multiple [`short`](Cx), [`long`](Cx) and [`env`](Cx) for multiple names. You can specify multiple
+/// names of the same type, `bpaf` would use items past the first one as hidden aliases.
 ///
 #[cfg_attr(not(doctest), doc = include_str!("docs2/short_long_env.md"))]
 #[must_use]
-pub fn long(long: &'static str) -> NamedArg {
-    NamedArg {
-        short: Vec::new(),
-        long: vec![long],
-        env: Vec::new(),
-        help: None,
-    }
+pub fn long(long: &'static str) -> Cx<Named> {
+    Cx(Named::from_long(long))
 }
 
 /// Parse an environment variable
 ///
-/// You can chain multiple [`short`](NamedArg::short), [`long`](NamedArg::long) and
-/// [`env`](NamedArg::env()) for multiple names. You can specify multiple names of the same type,
-///  `bpaf` would use items past the first one as hidden aliases.
+/// You can chain multiple [`short`](Cx), [`long`](Cx) and [`env`](Cx) for multiple names. You can specify multiple
+/// names of the same type, `bpaf` would use items past the first one as hidden aliases.
 ///
-/// For [`flag`](NamedArg::flag) and [`switch`](NamedArg::switch) environment variable being present
-/// gives the same result as the flag being present, allowing to implement things like `NO_COLOR`
-/// variables:
+/// For [`flag`](Cx::flag) and [`switch`](Cx::switch) environment variable being present gives the same result as the flag
+/// being present, allowing to implement things like `NO_COLOR` variables:
 ///
 /// ```console
 /// $ NO_COLOR=1 app --do-something
@@ -1349,25 +1416,20 @@ pub fn long(long: &'static str) -> NamedArg {
 ///
 #[cfg_attr(not(doctest), doc = include_str!("docs2/short_long_env.md"))]
 #[must_use]
-pub fn env(variable: &'static str) -> NamedArg {
-    NamedArg {
-        short: Vec::new(),
-        long: Vec::new(),
-        help: None,
-        env: vec![variable],
-    }
+pub fn env(variable: &'static str) -> Cx<Named> {
+    Cx(Named::from_env(variable))
 }
 
 /// Parse a positional argument
 ///
-/// For named flags and arguments ordering generally doesn't matter: most programs would
-/// understand `-O2 -v` the same way as `-v -O2`, but for positional items order matters: in *nix
-/// `cat hello world` and `cat world hello` would display contents of the same two files but in
-/// a different order.
+/// For named flags and arguments ordering generally doesn't matter: most programs would understand
+/// `-O2 -v` the same way as `-v -O2`, but for positional items order matters: in *nix
+/// `cat hello world` and `cat world hello` would display contents of the same two files but in a
+/// different order.
 ///
-/// When using combinatoric API you can specify the type with turbofish, for parsing types
-/// that don't implement [`FromStr`] you can use consume a `String`/`OsString` first and parse
-/// it by hand.
+/// When using combinatoric API you can specify the type with turbofish, for parsing types that
+/// don't implement [`FromStr`] you can use consume a `String`/`OsString` first and parse it by
+/// hand.
 /// ```no_run
 /// # use bpaf::*;
 /// fn parse_pos() -> impl Parser<usize> {
@@ -1376,8 +1438,8 @@ pub fn env(variable: &'static str) -> NamedArg {
 /// ```
 ///
 /// # Important restriction
-/// To parse positional arguments from a command line you should place parsers for all your
-/// named values before parsers for positional items and commands. In derive API fields parsed as
+/// To parse positional arguments from a command line you should place parsers for all your named
+/// values before parsers for positional items and commands. In derive API fields parsed as
 /// positional items or commands should be at the end of your `struct`/`enum`. The same rule applies
 /// to parsers with positional fields or commands inside: such parsers should go to the end as well.
 ///
@@ -1399,50 +1461,48 @@ pub fn env(variable: &'static str) -> NamedArg {
 ///
 /// By default `bpaf` accepts positional items with or without `--` where values permit, you can
 /// further restrict the parser to accept positional items only on the right side of `--` using
-/// [`strict`](ParsePositional::strict).
+/// [`strict`](Cx::strict).
 #[cfg_attr(not(doctest), doc = include_str!("docs2/positional.md"))]
 #[must_use]
-pub fn positional<T>(metavar: &'static str) -> ParsePositional<T> {
-    build_positional(metavar)
+pub fn positional<T>(metavar: &'static str) -> Cx<Positional<T>> {
+    Cx(build_positional(metavar))
 }
 
 #[doc(hidden)]
 #[deprecated = "You should switch from command(name, sub) to sub.command(name)"]
-pub fn command<T>(name: &'static str, subparser: OptionParser<T>) -> ParseCommand<T>
+pub fn command<T>(name: &'static str, subparser: OptionParser<T>) -> Cx<Command<T>>
 where
     T: 'static,
 {
-    ParseCommand {
+    Cx(Command {
         longs: vec![name],
         shorts: Vec::new(),
         help: subparser.short_descr(),
         subparser,
         adjacent: false,
-    }
+    })
 }
 
 /// Parse a single arbitrary item from a command line
 ///
-/// **`any` is designed to consume items that don't fit into the usual [`flag`](NamedArg::flag)
-/// /[`switch`](NamedArg::switch)/[`argument`](NamedArg::argument)/[`positional`]/
-/// [`command`](OptionParser::command) classification, in most cases you don't need to use it**
+/// **`any` is designed to consume items that don't fit into the usual [`flag`](Cx::flag)
+/// /[`switch`](Cx::switch)/[`argument`](Cx::argument)/[`positional`]/[`command`](OptionParser::command) classification, in most cases you don't need to
+/// use it**
 ///
 /// By default, `any` behaves similarly to [`positional`] so you should be using it near the
-/// rightmost end of the consumer struct and it will only try to parse the first unconsumed item
-/// on the command line. It is possible to lift this restriction by calling
-/// [`anywhere`](ParseAny::anywhere) on the parser.
+/// rightmost end of the consumer struct and it will only try to parse the first unconsumed item on
+/// the command line. It is possible to lift this restriction by calling [`anywhere`](Cx::anywhere) on the parser.
 ///
-/// `check` argument is a function from any type `I` that implements `FromStr` to `T`.
-/// Usually this should be `String` or `OsString`, but feel free to experiment. When
-/// running `any` tries to parse an item on a command line into that `I` and applies the `check`
-/// function. If the `check` succeeds - parser `any` succeeds and produces `T`, otherwise it behaves
-/// as if it hasn't seen it. If `any` works in `anywhere` mode - it will try to parse all other
-/// unconsumed items, otherwise, `any` fails.
+/// `check` argument is a function from any type `I` that implements `FromStr` to `T`. Usually this
+/// should be `String` or `OsString`, but feel free to experiment. When running `any` tries to parse
+/// an item on a command line into that `I` and applies the `check` function. If the `check`
+/// succeeds - parser `any` succeeds and produces `T`, otherwise it behaves as if it hasn't seen it.
+/// If `any` works in `anywhere` mode - it will try to parse all other unconsumed items, otherwise,
+/// `any` fails.
 ///
 /// # Use `any` to capture the remaining arguments
-/// Normally you would use [`positional`] with [`strict`](ParsePositional::strict) annotation for
-/// that, but using any allows you to blur the boundary between arguments for child process and self
-/// process a bit more.
+/// Normally you would use [`positional`] with [`strict`](Cx::strict) annotation for that, but using any allows
+/// you to blur the boundary between arguments for child process and self process a bit more.
 #[cfg_attr(not(doctest), doc = include_str!("docs2/any_simple.md"))]
 ///
 /// # Use `any` to parse a non standard flag
@@ -1451,20 +1511,20 @@ where
 ///
 /// # Use `any` to parse a non standard argument
 /// Normally `any` would try to display itself as a usual metavariable in the usage line and
-/// generated help, you can customize that with [`metavar`](ParseAny::metavar) method:
+/// generated help, you can customize that with [`metavar`](Cx::metavar) method:
 ///
 #[cfg_attr(not(doctest), doc = include_str!("docs2/any_literal.md"))]
 ///
 /// # See also
 /// [`literal`] - a specialized version of `any` that tries to parse a fixed literal
 #[must_use]
-pub fn any<I, T, F>(metavar: &str, check: F) -> ParseAny<T>
+pub fn any<I, T, F>(metavar: &str, check: F) -> Cx<Anything<T>>
 where
     I: FromStr + 'static,
     F: Fn(I) -> Option<T> + 'static,
     <I as std::str::FromStr>::Err: std::fmt::Display,
 {
-    ParseAny {
+    Cx(Anything {
         metavar: [(metavar, Style::Metavar)][..].into(),
         help: None,
         check: Box::new(move |os: std::ffi::OsString| {
@@ -1475,15 +1535,14 @@ where
         }),
 
         anywhere: false,
-    }
+    })
 }
 
 /// A specialized version of [`any`] that consumes an arbitrary string
 ///
 /// By default `literal` behaves similarly to [`positional`] so you should be using it near the
-/// rightmost end of the consumer struct and it will only try to parse the first unconsumed
-/// item on the command line. It is possible to lift this restriction by calling
-/// [`anywhere`](ParseAny::anywhere) on the parser.
+/// rightmost end of the consumer struct and it will only try to parse the first unconsumed item on
+/// the command line. It is possible to lift this restriction by calling [`anywhere`](Cx::anywhere) on the parser.
 ///
 #[cfg_attr(not(doctest), doc = include_str!("docs2/any_literal.md"))]
 ///
@@ -1491,7 +1550,7 @@ where
 /// [`any`] - a generic version of `literal` that uses function to decide if value is to be parsed
 /// or not.
 #[must_use]
-pub fn literal(val: &'static str) -> ParseAny<()> {
+pub fn literal(val: &'static str) -> Cx<Anything<()>> {
     any("", move |s: String| if s == val { Some(()) } else { None })
         .metavar(&[(val, crate::buffer::Style::Literal)][..])
 }
@@ -1510,14 +1569,13 @@ where
     construct!(skip, parser).map(|x| x.1)
 }
 
-/// Choose between several parsers specified at runtime, with a caller-supplied
-/// message for the empty-iterator case
+/// Choose between several parsers specified at runtime, with a caller-supplied message for the
+/// empty-iterator case
 ///
-/// Behaves like [`choice`], but instead of the fixed `"Invalid choice usage"`
-/// message, an empty `parsers` iterator folds to a parser that always fails with
-/// `empty_message`. Useful when an empty set is a legitimate runtime state that
-/// deserves a domain-specific diagnostic rather than a generic usage error -
-/// for example a registry of plugin commands that is allowed to be empty.
+/// Behaves like [`choice`], but instead of the fixed `"Invalid choice usage"` message, an empty
+/// `parsers` iterator folds to a parser that always fails with `empty_message`. Useful when an
+/// empty set is a legitimate runtime state that deserves a domain-specific diagnostic rather than a
+/// generic usage error - for example a registry of plugin commands that is allowed to be empty.
 pub fn choice_with<T: 'static>(
     parsers: impl IntoIterator<Item = Box<dyn Parser<T>>>,
     empty_message: &'static str,
@@ -1528,7 +1586,7 @@ pub fn choice_with<T: 'static>(
         Some(p) => p,
     };
     for that in parsers {
-        this = Box::new(ParseOrElse { this, that })
+        this = Box::new(Alt { this, that })
     }
     this
 }
@@ -1548,9 +1606,8 @@ pub fn choice<T: 'static>(parsers: impl IntoIterator<Item = Box<dyn Parser<T>>>)
 
 /// Parse the application name
 ///
-/// If you are using [`OptionParser::run`] then it should just work. If you are using
-/// some variation of [`OptionParser::run_inner`] you'll need to set the application
-/// name using [`Args::set_name`].
+/// If you are using [`OptionParser::run`] then it should just work. If you are using some variation
+/// of [`OptionParser::run_inner`] you'll need to set the application name using [`Args::set_name`].
 ///
 #[cfg_attr(not(doctest), doc = include_str!("docs2/appname.md"))]
 pub fn appname() -> impl Parser<String> {

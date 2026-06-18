@@ -273,8 +273,8 @@
                 //! 
                 #![cfg_attr(not(doctest), doc = include_str!("docs2/switch.md"))]
                 //! 
-                //! For more detailed info see [`NamedArg::switch`] and
-                //! [`NamedArg::flag`]
+                //! For more detailed info see [`switch`](crate::Cx::switch) and
+                //! [`flag`](crate::Cx::flag)
                 //!
                 //!
                 //! &nbsp;
@@ -337,7 +337,7 @@
                 //! 
                 #![cfg_attr(not(doctest), doc = include_str!("docs2/argument.md"))]
                 //! 
-                //! For more detailed info see [`NamedArg::argument`]
+                //! For more detailed info see [`argument`](crate::Cx::argument)
                 //!
                 //!
                 //! &nbsp;
@@ -692,18 +692,18 @@
                     //! 
                     //! First of all - the switch needs a name - you can start with [`short`] or [`long`] and add more
                     //! names if you want: `long("simple")` or `short('s').long("simple")`. This gives something with
-                    //! the type [`NamedArg`]:
+                    //! the type [`Cx<Named>`](crate::Cx):
                     //! 
                     //! ```rust
                     //! # use bpaf::*;
-                    //! use bpaf::parsers::NamedArg;
-                    //! fn simple_switch() -> NamedArg {
+                    //! use bpaf::{Cx, parsers::Named};
+                    //! fn simple_switch() -> Cx<Named> {
                     //!     short('s').long("simple")
                     //! }
                     //! ```
                     //! 
-                    //! From `NamedArg` you make a switch parser by calling [`NamedArg::switch`]. Usually, you do it
-                    //! right away without assigning `NamedArg` to a variable.
+                    //! From `Cx<Named>` you make a switch parser by calling [`switch`](crate::Cx::switch). Usually, you
+                    //! do it right away without assigning `Cx<Named>` to a variable.
                     //! 
                     //! ```rust
                     //! # use bpaf::*;
@@ -719,7 +719,7 @@
                     #![cfg_attr(not(doctest), doc = include_str!("docs2/compose_basic_switch.md"))]
                     //! 
                     //! 
-                    //! With [`NamedArg::help`] you can attach a help message that will be used in `--help` output.
+                    //! With [`help`](crate::Cx) you can attach a help message that will be used in `--help` output.
                     //!
                     //!
                     //! &nbsp;
@@ -765,10 +765,10 @@
                     //! #### Argument parser
                     //! 
                     //! Next in complexity would be a parser to consume a named argument, such as `-p my_crate`. Same
-                    //! as with the switch parser it starts from a `NamedArg` but the next method is [`NamedArg::argument`].
-                    //! This method takes a metavariable name - a short description that will be used in the `--help`
-                    //! output. `rustc` also needs to know the parameter type you are trying to parse, there are
-                    //! several ways to do it:
+                    //! as with the switch parser it starts from a `Cx<Named>` but the next method is
+                    //! [`argument`](crate::Cx::argument). This method takes a metavariable name - a short description
+                    //! that will be used in the `--help` output. `rustc` also needs to know the parameter type you are
+                    //! trying to parse, there are several ways to do it:
                     //! 
                     //! ```rust
                     //! # use bpaf::*;
@@ -841,9 +841,9 @@
                     //! #### Positional item parser
                     //! 
                     //! And the last simple option type is a parser for positional items. Since there's no name you use
-                    //! the [`positional`] function directly. Similar to [`NamedArg::argument`] this method takes
-                    //! a metavariable name and a type parameter in some form. You can also attach the help message
-                    //! thanks to [`ParsePositional::help`]
+                    //! the [`positional`] function directly. Similar to [`argument`](crate::Cx::argument) this method
+                    //! takes a metavariable name and a type parameter in some form. You can also attach the help message
+                    //! thanks to [`help`](crate::Cx)
                     //! 
                     //! Full example:
                     #![cfg_attr(not(doctest), doc = include_str!("docs2/compose_basic_positional.md"))]
@@ -1154,7 +1154,8 @@
                 //! was the only thing your application would parse then turn it into a regular [`Parser`]
                 //! you can further compose with [`OptionParser::command`].
                 //! 
-                //! This gives [`ParseCommand`] back, you can add aliases or tweak the help message if you want to.
+                //! This gives [`Cx<Command>`](crate::Cx) back, you can add aliases or tweak the help message if you
+                //! want to.
                 //! 
                 #![cfg_attr(not(doctest), doc = include_str!("docs2/compose_basic_command.md"))]
                 //!
@@ -1443,10 +1444,10 @@
                 //! 
                 //! By default, `bpaf` picks parsers depending on a field type according to those rules:
                 //! 
-                //! 1. `bool` fields are converted into switches: [`NamedArg::switch`](crate::parsers::NamedArg::switch)
+                //! 1. `bool` fields are converted into switches: [`switch`](crate::Cx::switch)
                 //! 2. `()` (unit) fields, unit variants of an enum or unit structs themselves are handled as
-                //!    [`NamedArg::req_flag`](crate::parsers::NamedArg::req_flag) and thus users must always specify
-                //!    them for the parser to succeed
+                //!    [`req_flag`](crate::Cx::req_flag) and thus users must always specify them for the parser to
+                //!    succeed
                 //! 3. All other types with no `Vec`/`Option` are parsed using [`FromStr`](std::str::FromStr), but
                 //!    smartly, so non-utf8 `PathBuf`/`OsString` are working as expected.
                 //! 4. For values wrapped in `Option` or `Vec` bpaf derives the inner parser and then applies
@@ -2209,41 +2210,41 @@
             //! 1. Enable `autocomplete` feature:
             //! 
             //! 
-            //! 	```toml
-            //! 	bpaf = { version = "0.9", features = ["autocomplete"] }
-            //! 	```
+            //!    ```toml
+            //!    bpaf = { version = "0.9", features = ["autocomplete"] }
+            //!    ```
             //! 
-            //! 2. Decorate [`argument`](crate::parsers::NamedArg::argument) and [`positional`] parsers with
-            //!     [`Parser::complete`] to provide completion functions for arguments
+            //! 2. Decorate [`argument`](crate::Cx::argument) and [`positional`] parsers with
+            //!    [`Parser::complete`] to provide completion functions for arguments
             //! 
             //! 
             //! 3. Depending on your shell generate appropriate completion file and place it to whereever your
-            //!     shell is going to look for it, name of the file should correspond in some way to name of
-            //!     your program. Consult manual for your shell for the location and named conventions:
+            //!    shell is going to look for it, name of the file should correspond in some way to name of
+            //!    your program. Consult manual for your shell for the location and named conventions:
             //! 
-            //! 	 1. **bash**
-            //! 		```console
-            //! 		$ your_program --bpaf-complete-style-bash >> ~/.bash_completion
-            //! 		```
+            //!    1. **bash**
+            //!       ```console
+            //!       $ your_program --bpaf-complete-style-bash >> ~/.bash_completion
+            //!       ```
             //! 
-            //! 	 1. **zsh**: note `_` at the beginning of the filename
-            //! 		```console
-            //! 		$ your_program --bpaf-complete-style-zsh > ~/.zsh/_your_program
-            //! 		```
+            //!    1. **zsh**: note `_` at the beginning of the filename
+            //!       ```console
+            //!       $ your_program --bpaf-complete-style-zsh > ~/.zsh/_your_program
+            //!       ```
             //! 
-            //! 	 1. **fish**
-            //! 		```console
-            //! 		$ your_program --bpaf-complete-style-fish > ~/.config/fish/completions/your_program.fish
-            //! 		```
+            //!    1. **fish**
+            //!       ```console
+            //!       $ your_program --bpaf-complete-style-fish > ~/.config/fish/completions/your_program.fish
+            //!       ```
             //! 
-            //! 	 1. **elvish**
-            //! 		```console
-            //! 		$ your_program --bpaf-complete-style-elvish >> ~/.config/elvish/rc.elv
-            //! 		```
+            //!    1. **elvish**
+            //!       ```console
+            //!       $ your_program --bpaf-complete-style-elvish >> ~/.config/elvish/rc.elv
+            //!       ```
             //! 
             //! 4. Restart your shell - you need to done it only once or optionally after bpaf major version
-            //!     upgrade: generated completion files contain only instructions how to ask your program for
-            //!     possible completions and don’t change even if options are different.
+            //!    upgrade: generated completion files contain only instructions how to ask your program for
+            //!    possible completions and don’t change even if options are different.
             //! 
             //! 
             //! 5. Generated scripts rely on your program being accessible in $PATH
@@ -2360,7 +2361,7 @@
             //! - an option that takes a set of characters: `-mode -rw`, `mode /rw`
             //! 
             //! In all cases, long name with a single dash is implemented by the [`literal`] with
-            //! [`ParseAny::anywhere`](crate::parsers::ParseAny::anywhere) with some items made `adjacent` to it.
+            //! [`anywhere`](crate::Cx::anywhere) with some items made `adjacent` to it.
             //! 
             //! To parse `-user bob` this is simply literal `-user` adjacent to a positional item with `map` to
             //! focus on the interesting part.
@@ -2427,7 +2428,7 @@
             //! The function `tag` serves this purpose. It performs the following steps:
             //! 
             //! - consume any item that starts with a prefix at any argument position with [`any`] and
-            //!   [`ParseAny::anywhere`]
+            //!   [`anywhere`](crate::Cx::anywhere)
             //! - attaches help message and custom metadata to make `--help` friendlier
             //! - parses suffix with [`Parser::parse`]
             //! 
@@ -2489,7 +2490,7 @@
             //! - enable or disable an extension using `+ext name` and `-ext name` like syntax
             //! - enable or disable specific extensions with syntax like `-xinerama` or `+backing`
             //! 
-            //! Both parsers use [`any`] with [`ParseAny::anywhere`]
+            //! Both parsers use [`any`] with [`anywhere`](crate::Cx::anywhere)
             //! 
             //! 
             #![cfg_attr(not(doctest), doc = include_str!("docs2/xorg.md"))]
@@ -2541,7 +2542,7 @@
             //! #### Command chaining
             //! Lets you do things like `setup.py sdist bdist`: [command chaining](https://click.palletsprojects.com/en/7.x/commands/#multi-command-chaining)
             //! 
-            //! With [`adjacent`](crate::parsers::ParseCommand::adjacent)
+            //! With [`adjacent`](crate::Cx)
             //! `bpaf` allows you to have several commands side by side instead of being nested.
             //! 
             #![cfg_attr(not(doctest), doc = include_str!("docs2/adjacent_command.md"))]
@@ -2593,7 +2594,7 @@
             //! #### Multi-value arguments: `--foo ARG1 ARG2 ARG3`
             //! 
             //! By default arguments take at most one value, you can create multi value options by using
-            //! [`adjacent`](crate::parsers::ParseCon::adjacent) modifier
+            //! [`adjacent`](crate::Cx) modifier
             //! 
             #![cfg_attr(not(doctest), doc = include_str!("docs2/adjacent_struct_0.md"))]
             //!
@@ -2761,8 +2762,7 @@
             //! 
             //! #### Skipping optional positional items if parsing or validation fails
             //! 
-            //! Combinations like [`Parser::optional`] and
-            //! [`ParseOptional::catch`](crate::parsers::ParseOptional::catch) allow to try to parse something
+            //! Combinations like [`Parser::optional`] and [`catch`](crate::Cx) allow to try to parse something
             //! and then handle the error as if pase attempt never existed
             //! 
             #![cfg_attr(not(doctest), doc = include_str!("docs2/numeric_prefix.md"))]
@@ -3161,8 +3161,8 @@
         //! ## Putting the values into a context
         //! 
         //! Similarly to how `Reader` defined above `bpaf`'s `Parsers` don't actually have values inside
-        //! until they are executed. Instead starting points ([`flag`](NamedArg::flag), [`positional`],
-        //! [`argument`](NamedArg::argument), etc) define what exactly needs to be consumed, various mapping
+        //! until they are executed. Instead starting points ([`flag`](crate::Cx::flag), [`positional`],
+        //! [`argument`](crate::Cx::argument), etc) define what exactly needs to be consumed, various mapping
         //! functions define transformations, [`construct!`] composes them and defines the relative order
         //! values should be consumed. Not everything present inside [`Parser`] can be repesented in terms
         //! of plain applicative functors - specifically [`parse`](Parser::parse) is not and it is best

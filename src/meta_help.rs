@@ -1,10 +1,10 @@
 use std::collections::BTreeSet;
 
 use crate::{
+    Meta,
     buffer::{Block, Doc, Style, Token},
     info::Info,
     item::{Item, ShortLong},
-    Meta,
 };
 
 #[doc(hidden)]

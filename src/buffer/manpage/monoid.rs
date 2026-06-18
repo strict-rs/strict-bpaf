@@ -55,11 +55,12 @@ impl<T> FreeMonoid<T> {
     {
         let r = self.payload.len();
         self.payload.push_str(payload);
-        if let Some((prev_range, prev_meta)) = self.labels.last_mut() {
-            if self.squash && prev_meta == &meta {
-                prev_range.end = self.payload.len();
-                return self;
-            }
+        if let Some((prev_range, prev_meta)) = self.labels.last_mut()
+            && self.squash
+            && prev_meta == &meta
+        {
+            prev_range.end = self.payload.len();
+            return self;
         }
         self.labels.push((r..self.payload.len(), meta));
         self
@@ -72,11 +73,12 @@ impl<T> FreeMonoid<T> {
     {
         let r = self.payload.len();
         self.payload.push(payload);
-        if let Some((prev_range, prev_meta)) = self.labels.last_mut() {
-            if self.squash && prev_meta == &meta {
-                prev_range.end = self.payload.len();
-                return self;
-            }
+        if let Some((prev_range, prev_meta)) = self.labels.last_mut()
+            && self.squash
+            && prev_meta == &meta
+        {
+            prev_range.end = self.payload.len();
+            return self;
         }
         self.labels.push((r..self.payload.len(), meta));
         self

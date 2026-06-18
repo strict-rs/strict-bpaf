@@ -1,5 +1,5 @@
-In `--help` message `req_flag` look similarly to [`switch`](NamedArg::switch) and
-[`flag`](NamedArg::flag)
+In `--help` message `req_flag` look similarly to [`switch`](crate::Cx::switch) and
+[`flag`](crate::Cx::flag)
 
 > --help
 

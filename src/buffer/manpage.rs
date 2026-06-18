@@ -1,6 +1,6 @@
 use crate::{
-    buffer::{extract_sections, manpage::escape::Apostrophes, Block, HelpItems, Style, Token},
     Doc, OptionParser, Parser,
+    buffer::{Block, HelpItems, Style, Token, extract_sections, manpage::escape::Apostrophes},
 };
 
 mod escape;
@@ -207,7 +207,9 @@ impl Doc {
                             roff.control0("nf");
                         }
 
-                        Block::TermRef => todo!(),
+                        Block::TermRef => {
+                            roff.text(&[(Font::Roman, "`")]);
+                        }
                     }
                 }
                 Token::BlockEnd(block) => {
@@ -234,7 +236,9 @@ impl Doc {
                         Block::Meta => {
                             roff.control0("fi");
                         }
-                        Block::TermRef => todo!(),
+                        Block::TermRef => {
+                            roff.text(&[(Font::Roman, "`")]);
+                        }
                     }
                 }
             }

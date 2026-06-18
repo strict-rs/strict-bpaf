@@ -1,10 +1,10 @@
 #### Argument parser
 
 Next in complexity would be a parser to consume a named argument, such as `-p my_crate`. Same
-as with the switch parser it starts from a `NamedArg` but the next method is [`NamedArg::argument`].
-This method takes a metavariable name - a short description that will be used in the `--help`
-output. `rustc` also needs to know the parameter type you are trying to parse, there are
-several ways to do it:
+as with the switch parser it starts from a `Cx<Named>` but the next method is
+[`argument`](crate::Cx::argument). This method takes a metavariable name - a short description
+that will be used in the `--help` output. `rustc` also needs to know the parameter type you are
+trying to parse, there are several ways to do it:
 
 ```rust
 # use bpaf::*;

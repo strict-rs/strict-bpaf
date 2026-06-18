@@ -1,395 +1,307 @@
-# bpaf
-  ![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)
-  [![bpaf on crates.io](https://img.shields.io/crates/v/bpaf)](https://crates.io/crates/bpaf)
-  [![bpaf on docs.rs](https://docs.rs/bpaf/badge.svg)](https://docs.rs/bpaf)
-  [![Source Code Repository](https://img.shields.io/badge/Code-On%20github.com-blue)](https://github.com/pacak/bpaf)
-  [![bpaf on deps.rs](https://deps.rs/repo/github/pacak/bpaf/status.svg)](https://deps.rs/repo/github/pacak/bpaf)
+# bpaf ![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue) [![bpaf on crates.io](https://img.shields.io/crates/v/bpaf)](https://crates.io/crates/bpaf) [![bpaf on docs.rs](https://docs.rs/bpaf/badge.svg)](https://docs.rs/bpaf) [![Source Code Repository](https://img.shields.io/badge/Code-On%20GitHub-blue?logo=GitHub)](https://github.com/pacak/bpaf) [![Rust Version: 1.96.0](https://img.shields.io/badge/rustc-1.96.0-orange.svg)](https://github.com/rust-lang/rust/releases/tag/1.96.0)
 
 Lightweight and flexible command line argument parser with derive and combinatoric style API
 
-## Derive and combinatoric API
+## Quick links
 
-`bpaf` supports both combinatoric and derive APIs and it’s possible to mix and match both APIs
-at once. Both APIs provide access to mostly the same features, some things are more convenient
-to do with derive (usually less typing), some - with combinatoric (usually maximum flexibility
-and reducing boilerplate structs). In most cases using just one would suffice. Whenever
-possible APIs share the same keywords and overall structure. Documentation is shared and
-contains examples for both combinatoric and derive style.
+* [Introduction][__link0] - features, design goals, restrictions
+* [Tutorials][__link1] - practical learning oriented information and
+  examples to get you started
+  * [Types of arguments][__link2] -
+    common types of line options and conventions (optional)
+  * [Combinatoric API][__link3]  -
+    Parse arguments without using proc macros
+  * [Derive API][__link4] -
+    Create a parser by defining a structure
+* [How-to and guides][__link5] - assumes familiarity with the basics and
+  explains how to concrete tasks
+* [Explanations][__link6] - theoretical information about abstractions
+  used by the library, oriented for understanding
+* [FAQ][__link7] - questions from library users
 
-`bpaf` supports dynamic shell completion for `bash`, `zsh`, `fish` and `elvish`.
+## A quick start
 
+Add `bpaf`, optionally with derive enabled
 
-## Quick start - combinatoric and derive APIs
+```text
+$ cargo add bpaf -F derive,dull-color
+```
 
-<details>
-<summary style="display: list-item;">Derive style API, click to expand</summary>
+Use either derive or combinatoric API and try running it
 
-1. Add `bpaf` under `[dependencies]` in your `Cargo.toml`
+<details><summary>Combinatoric example</summary>
 
+```rust
+use bpaf::*;
 
-	```toml
-	[dependencies]
-	bpaf = { version = "0.9", features = ["derive"] }
-	```
+#[derive(Debug, Clone)]
+pub struct Options {
+    message: String,
+}
 
-2. Define a structure containing command line attributes and run generated function
+pub fn options() -> OptionParser<Options> {
+    let message = positional("MESSAGE").help("Message to print in a big friendly letters");
+    construct!(Options { message }).to_options()
+}
 
-
-	```rust
-	use bpaf::Bpaf;
-
-	#[derive(Clone, Debug, Bpaf)]
-	#[bpaf(options, version)]
-	/// Accept speed and distance, print them
-	struct SpeedAndDistance {
-	    /// Speed in KPH
-	    speed: f64,
-	    /// Distance in miles
-	    distance: f64,
-	}
-
-	fn main() {
-	    // #[derive(Bpaf)] generates `speed_and_distance` function
-	    let opts = speed_and_distance().run();
-	    println!("Options: {:?}", opts);
-	}
-	```
-
-
-3. Try to run the app
-
-
-	```console
-	% very_basic --help
-	Accept speed and distance, print them
-
-	Usage: --speed=ARG --distance=ARG
-
-	Available options:
-	        --speed=ARG     Speed in KPH
-	        --distance=ARG  Distance in miles
-	    -h, --help            Prints help information
-	    -V, --version         Prints version information
-
-	% very_basic --speed 100
-	Expected --distance ARG, pass --help for usage information
-
-	% very_basic --speed 100 --distance 500
-	Options: SpeedAndDistance { speed: 100.0, distance: 500.0 }
-
-	% very_basic --version
-	Version: 0.9.0 (taken from Cargo.toml by default)
-	```
-</details>
-
-<details>
-<summary style="display: list-item;">Combinatoric style API, click to expand</summary>
-
-1. Add `bpaf` under `[dependencies]` in your `Cargo.toml`
-
-
-	```toml
-	[dependencies]
-	bpaf = "0.9"
-
-
-2. Declare parsers for components, combine them and run it
-
-
-	```rust
-	use bpaf::{construct, long, Parser};
-	#[derive(Clone, Debug)]
-	struct SpeedAndDistance {
-	    /// Speed in KPH
-	    speed: f64,
-	    /// Distance in miles
-	    distance: f64,
-	}
-
-	fn main() {
-	    // primitive parsers
-	    let speed = long("speed")
-	        .help("Speed in KPH")
-	        .argument::<f64>("SPEED");
-
-	    let distance = long("distance")
-	        .help("Distance in miles")
-	        .argument::<f64>("DIST");
-
-	    // parser containing information about both speed and distance
-	    let parser = construct!(SpeedAndDistance { speed, distance });
-
-	    // option parser with metainformation attached
-	    let speed_and_distance
-	        = parser
-	        .to_options()
-	        .descr("Accept speed and distance, print them");
-
-	    let opts = speed_and_distance.run();
-	    println!("Options: {:?}", opts);
-	}
-	```
-
-
-3. Try to run the app
-
-
-	```console
-	% very_basic --help
-	Accept speed and distance, print them
-
-	Usage: --speed=ARG --distance=ARG
-
-	Available options:
-	        --speed=ARG     Speed in KPH
-	        --distance=ARG  Distance in miles
-	    -h, --help          Prints help information
-	    -V, --version       Prints version information
-
-	% very_basic --speed 100
-	Expected --distance ARG, pass --help for usage information
-
-	% very_basic --speed 100 --distance 500
-	Options: SpeedAndDistance { speed: 100.0, distance: 500.0 }
-
-	% very_basic --version
-	Version: 0.5.0 (taken from Cargo.toml by default)
-	```
+fn main() {
+    println!("{:?}", options().run())
+}
+```
 
 </details>
-
-## Design goals: flexibility, reusability, correctness
-
-Library allows to consume command line arguments by building up parsers for individual
-arguments and combining those primitive parsers using mostly regular Rust code plus one macro.
-For example, it’s possible to take a parser that requires a single floating point number and
-transform it to a parser that takes several of them or takes it optionally so different
-subcommands or binaries can share a lot of the code:
-
+<details><summary>Derive example</summary>
 
 ```rust
-// a regular function that doesn't depend on any context, you can export it
-// and share across subcommands and binaries
-fn speed() -> impl Parser<f64> {
-    long("speed")
-        .help("Speed in KPH")
-        .argument::<f64>("SPEED")
-}
+use bpaf::*;
 
-// this parser accepts multiple `--speed` flags from a command line when used,
-// collecting results into a vector
-fn multiple_args() -> impl Parser<Vec<f64>> {
-    speed().many()
-}
-
-// this parser checks if `--speed` is present and uses value of 42.0 if it's not
-fn with_fallback() -> impl Parser<f64> {
-    speed().fallback(42.0)
-}
-```
-
-At any point you can apply additional validation or fallback values in terms of current parsed
-state of each sub-parser and you can have several stages as well:
-
-
-```rust
-#[derive(Clone, Debug)]
-struct Speed(f64);
-fn speed() -> impl Parser<Speed> {
-    long("speed")
-        .help("Speed in KPH")
-        .argument::<f64>("SPEED")
-
-        // You can perform additional validation with `parse` and `guard` functions
-        // in as many steps as required.
-        // Before and after next two applications the type is still `impl Parser<f64>`
-        .guard(|&speed| speed >= 0.0, "You need to buy a DLC to move backwards")
-        .guard(|&speed| speed <= 100.0, "You need to buy a DLC to break the speed limits")
-
-        // You can transform contained values, next line gives `impl Parser<Speed>` as a result
-        .map(|speed| Speed(speed))
-}
-```
-
-The library follows the **parse, don’t validate** approach when possible. Usually you parse your values
-just once, and then get the results as a Rust struct/enum with strict types  in both combinatoric and
-derive APIs.
-
-
-## Design goals: restrictions
-
-The main restriction that the library sets is that you can’t use parsed values (but not the fact that
-parser succeeded or failed) to decide how to parse subsequent values. In other words the parsers
-don’t have the monadic strength, only the applicative one.
-
-To give an example, you can implement this description:
-
-
-> Program takes one of `--stdout` or `--file` flag to specify the output target, when it’s
-> `--file` program also requires `-f` attribute with the filename
-
-But not this one:
-
-> Program takes an `-o` attribute with possible values of `'stdout'` and `'file'`, when it’s
-> `'file'` program also requires `-f` attribute with the filename
-
-
-This set of restrictions allows `bpaf` to extract information about the structure of the
-computations to generate help, dynamic completion and overall results in less confusing endures
-experience
-
-`bpaf` performs no parameter names validation, in fact having multiple parameters with the same
-name is fine, and you can combine them as alternatives and performs no fallback other than
-[`fallback`][__link10]. You need to pay attention to the order of the alternatives inside the
-macro: parser that consumes the left most available argument on a command line wins, if this is
-the same - left most parser wins. So to parse a parameter `--test` that can be both
-[`switch`][__link11] and [`argument`][__link12] you should put the argument one first.
-
-You must place [`positional`][__link13] items at the end of a structure in derive API or
-consume them as last arguments in derive API.
-
-
-## Dynamic shell completion
-
-`bpaf` implements shell completion to allow to automatically fill in not only flag and command
-names, but also argument and positional item values.
-
-1. Enable `autocomplete` feature:
-
-
-	```toml
-	bpaf = { version = "0.9", features = ["autocomplete"] }
-	```
-
-
-2. Decorate [`argument`][__link14] and [`positional`][__link15] parsers with
-    [`complete`][__link16] to autocomplete argument values
-
-
-3. Depending on your shell, it generates the appropriate completion file and place it to wherever your
-    shell is going to look for it. The name of the file should correspond in some way to name of
-    your program. Consult the manual for your shell for the location and named conventions:
-
-	 1. **bash**
-		```console
-		$ your_program --bpaf-complete-style-bash >> ~/.bash_completion
-		```
-
-
-	 1. **zsh**: note `_` at the beginning of the filename
-		```console
-		$ your_program --bpaf-complete-style-zsh > ~/.zsh/_your_program
-		```
-
-
-	 1. **fish**
-		```console
-		$ your_program --bpaf-complete-style-fish > ~/.config/fish/completions/your_program.fish
-		```
-
-
-	 1. **elvish**
-		```console
-		$ your_program --bpaf-complete-style-elvish >> ~/.config/elvish/rc.elv
-		```
-
-
-
-
-4. Restart your shell - you need to do it only once or optionally after `bpaf` major version
-    upgrade: generated completion files contain only instructions how to ask your program for
-    possible completions and don’t change even if options are different.
-
-
-5. Generated scripts rely on your program being accessible in `$PATH`
-
-
-
-
-## More examples
-
-You can find a more examples here: <https://github.com/pacak/bpaf/tree/master/examples>
-
-They’re usually documented or at least contain an explanation to important bits and you can see
-how they work by cloning the repo and running
-
-
-```shell
-$ cargo run --example example_name
-```
-
-
-## Testing your own parsers
-
-You can test your own parsers to maintain compatibility or simply checking expected output with [`run_inner`][__link18]
-
-
-```rust
 #[derive(Debug, Clone, Bpaf)]
 #[bpaf(options)]
 pub struct Options {
-    pub user: String
+    /// Message to print in a big friendly letters
+    #[bpaf(positional("MESSAGE"))]
+    message: String,
 }
 
-#[test]
-fn test_my_options() {
-    let help = options()
-        .run_inner(&["--help"])
-        .unwrap_err()
-        .unwrap_stdout();
-    let expected_help = "\
-Usage --user=ARG
-<skip>
-";
-
-    assert_eq!(help, expected_help);
+fn main() {
+    println!("{:?}", options().run())
 }
 ```
 
+</details>
+<details><summary>Output</summary>
 
-## Cargo features
+With everything in place users should be able to pass their arguments
 
- - `derive`: adds a dependency on `bpaf_derive` crate and reexport `Bpaf` derive macro. You
-   need to enable it to use derive API. Disabled by default.
+<div class='bpaf-doc'>
+$ app "Hello world"<br>
+Options { message: "Hello world" }
+</div>
+
+As well as read the help message generated by the library
+
+<div class='bpaf-doc'>
+$ app --help<br>
+<p><b>Usage</b>: <tt><b>app</b></tt> <tt><i>MESSAGE</i></tt></p><p><div>
+<b>Available positional items:</b></div><dl><dt><tt><i>MESSAGE</i></tt></dt>
+<dd>Message to print in a big friendly letters</dd>
+</dl>
+</p><p><div>
+<b>Available options:</b></div><dl><dt><tt><b>-h</b></tt>, <tt><b>--help</b></tt></dt>
+<dd>Prints help information</dd>
+</dl>
+</p>
+<style>
+div.bpaf-doc {
+    padding: 14px;
+    background-color:var(--code-block-background-color);
+    font-family: "Source Code Pro", monospace;
+    margin-bottom: 0.75em;
+}
+div.bpaf-doc dt { margin-left: 1em; }
+div.bpaf-doc dd { margin-left: 3em; }
+div.bpaf-doc dl { margin-top: 0; padding-left: 1em; }
+div.bpaf-doc  { padding-left: 1em; }
+</style>
+</div>
+
+</details>
+
+### Consuming items - making `Parser`
+
+`bpaf` allows you to describe the parsers using a mix of two APIs: combinatoric and derive.
+Both APIs can achieve the same results, you can use one that better suits your needs. You can
+find documentation with more examples following those links.
+
+* For an argument with a name you start a [`Cx<Named>`][__link8] builder from a combination of
+  [`short`][__link9], [`long`][__link10] and [`env`][__link11]. At the same time you can attach [`help`][__link12].
+* [`switch`][__link13] - simple switch that returns `true` if it’s present on a command line
+  and `false` otherwise.
+* [`flag`][__link14] - a variant of `switch` that lets you return one of two custom values,
+  for example `Color::On` and `Color::Off`.
+* [`req_flag`][__link15] - a variant of `switch` that only succeeds when its name is
+  present on a command line
+* [`argument`][__link16] - named argument containing a value, you can further customize
+  it with [`adjacent`][__link17]
+* [`positional`][__link18] - positional argument, you can further customize it with
+  [`strict`][__link19]
+* [`OptionParser::command`][__link20] - subcommand parser.
+* [`any`][__link21] and its specialized version [`literal`][__link22] are escape hatches that can parse anything
+  not fitting into usual classification.
+* [`pure`][__link23] and [`pure_with`][__link24] - a way to generate a value that can be composed without parsing
+  it from the command line.
+
+### Transforming and changing parsers
+
+By default primitive parsers gives you back a single `bool`, a single `PathBuf` or a single
+value produced by [`FromStr`][__link25] trait, etc. You can further transform it by chaining methods from
+[`Parser`][__link26] trait, some of those methods are applied automagically if you are using derive API.
+
+`bpaf` distinguishes two types of parse failures - “value is absent” and “value is present but
+invalid”, most parsers listed in this section only handle the first type of failure by default,
+but you can use their respective `catch` method to handle the later one.
+
+* [`fallback`][__link27] and [`fallback_with`][__link28] - return a
+  different value if parser fails to find what it is looking for. Generated help for former can
+  be updated to include default value using [`display_fallback`][__link29], [`debug_fallback`][__link30], or
+  [`format_fallback`][__link31].
+* [`optional`][__link32] - return `None` if value is missing instead of failing, see
+  also [`catch`][__link33].
+* [`many`][__link34], [`some`][__link35] and [`collect`][__link36] - collect
+  multiple values into a collection, usually a vector; bound the count with
+  [`take`][__link37], [`at_least`][__link38] or [`in_range`][__link39], and
+  recover from a partially consumed invalid value with [`catch`][__link40].
+* [`map`][__link41], [`parse`][__link42] and [`guard`][__link43] - transform
+  and/or validate value produced by a parser
+* [`to_options`][__link44] - finalize the parser and prepare to run it
+
+### Combining multiple parsers together
+
+Once you have parsers for all the primitive fields figured out you can start combining them
+together to produce a parser for a final result - data type you designed in the step one.
+For derive API you apply annotations to data types with `#[derive(Bpaf)`\] and `#[bpaf(..)]`,
+with combinatoric API you use [`construct!`][__link45] macro.
+
+All fields in a struct needs to be successfully parsed in order for the parser to succeed
+and only one variant from enum will consume its values at a time.
+
+You can use the [`adjacent`][__link46] annotation to parse multiple flags as an adjacent group allowing for
+more unusual scenarios such as multiple value arguments or chained commands, or [`start_adjacent`][__link47]
+for a left-anchored group that must begin at the current position with nothing unparsed to its
+left.
+
+### Improving user experience
+
+`bpaf` would use doc comments on fields and structures in derive mode and and values passed in
+various `help` methods to generate `--help` documentation, you can further improve it using
+those methods:
+
+* [`hide_usage`][__link48] and [`hide`][__link49] - hide the parser from
+  generated *Usage* line or whole generated help
+* [`group_help`][__link50] and [`with_group_help`][__link51] -
+  add a common description shared by several parsers
+* [`custom_usage`][__link52] - customize usage for a primitive or composite parser
+* [`usage`][__link53] and [`with_usage`][__link54] lets you to
+  customize whole usage line as a whole either by completely overriding it or by building around it.
+
+By default with completion enabled `bpaf` would complete names for flags, arguments and
+commands. You can also generate completion for argument values, possible positionals, etc.
+This requires enabling **autocomplete** cargo feature.
+
+* [`complete`][__link55] and [`complete_shell`][__link56]
+
+And finally you can generate documentation for command line in markdown, html and manpage
+formats using [`render_markdown`][__link57], [`render_html`][__link58] and [`render_manpage`][__link59], for more detailed info see
+[`doc`][__link60] module
+
+### Testing your parsers and running them
+
+* You can [`OptionParser::run`][__link61] the parser on the arguments passed on the command line
+* [`check_invariants`][__link62] checks for a few invariants in the
+  parser `bpaf` relies on
+* [`run_inner`][__link63] runs the parser with custom [`Args`][__link64] you can create
+  either explicitly or implicitly using one of the [`From`][__link65] implementations, `Args` can be
+  customized with [`set_comp`][__link66] and [`set_name`][__link67].
+* [`ParseFailure`][__link68] contains the parse outcome, you can consume it either by hands or using one
+  of [`exit_code`][__link69], [`unwrap_stdout`][__link70] and
+  [`unwrap_stderr`][__link71]
+
+### Cargo features
+
+* `derive`: adds a dependency on `bpaf_derive` crate and reexport `Bpaf` derive macro. You
+  need to enable it to use derive API. Disabled by default.
+
+* `batteries`: helpers implemented with public `bpaf` API. Disabled by default.
+
+* `autocomplete`: enables support for shell autocompletion. Disabled by default.
+
+* `bright-color`, `dull-color`: use more colors when printing `--help` and such. Enabling
+  either color feature adds some extra dependencies and might raise MRSV. If you are planning
+  to use this feature in a published app - it’s best to expose them as feature flags:
+  
+  ```toml
+  [features]
+  bright-color = ["bpaf/bright-color"]
+  dull-color = ["bpaf/dull-color"]
+  ```
+  
+  Disabled by default.
+
+* `docgen`: generate documentation from help declaration, see [`OptionParser::render_markdown`][__link72] and [`doc`][__link73]. Disabled by default.
 
 
- - `extradocs`: used internally to include tutorials to <https://docs.rs/bpaf>, no reason to
-   enable it for local development unless you want to build your own copy of the documentation
-   (<https://github.com/rust-lang/cargo/issues/8905>). Disabled by default.
-
-
- - `batteries`: helpers implemented with public `bpaf` API. Disabled by default.
-
-
- - `autocomplete`: enables support for shell autocompletion. Disabled by default.
-
-
- - `bright-color`, `dull-color`: use more colors when printing `--help` and such. Enabling
-   either color feature adds some extra dependencies and might raise MRSV. If you are planning
-   to use this feature in a published app - it’s best to expose them as feature flags:
-
-
-	```toml
-	[features]
-	bright-color = ["bpaf/bright-color"]
-	dull-color = ["bpaf/dull-color"]
-	```
-
-	Disabled by default.
-
-
- - `docgen`: generate documentation from help declaration, see [`OptionParser::render_markdown`][__link21]. Disabled by default.
-
-
-
-
- [__cargo_doc2readme_dependencies_info]: ggGkYW0AYXSEG52uRQSwBdezG6GWW8ODAbr5G6KRmT_WpUB5G9hPmBcUiIp6YXKEG67Vn_d8EgCjGwx1q1eGjg8OG62q7Al6912tG9tijfvWADwPYWSBgmRicGFmZTAuOC4w
- [__link10]: https://docs.rs/bpaf/0.9.11/bpaf/?search=bpaf::Parser::fallback
- [__link11]: https://docs.rs/bpaf/0.9.11/bpaf/?search=parsers::NamedArg::switch
- [__link12]: https://docs.rs/bpaf/0.9.11/bpaf/?search=parsers::NamedArg::argument
- [__link13]: https://docs.rs/bpaf/0.9.11/bpaf/?search=params::positional
- [__link14]: https://docs.rs/bpaf/0.9.11/bpaf/?search=parsers::NamedArg::argument
- [__link15]: https://docs.rs/bpaf/0.9.11/bpaf/?search=params::positional
- [__link16]: https://docs.rs/bpaf/0.9.11/bpaf/?search=bpaf::Parser::complete
- [__link18]: https://docs.rs/bpaf/0.9.11/bpaf/?search=info::OptionParser::run_inner
- [__link21]: https://docs.rs/bpaf/0.9.11/bpaf/?search=info::OptionParser::render_markdown
+ [__cargo_doc2readme_dependencies_info]: ggGmYW0CYXZlMC43LjJhdIQb2o_SNWoR6AAb3_T-k0ODPHwbnQW7uS_D2XsbjVFFtK-lC3BhYvVhcoQbcQvAQGULdaobIleu3R83LfIbDG8Lr0Lfz8sbqdEydbzzJmphZIKCbl9kb2N1bWVudGF0aW9u9oJkYnBhZmYwLjEwLjA
+ [__link0]: https://docs.rs/_documentation/latest/_documentation/?search=_0_intro
+ [__link1]: https://docs.rs/_documentation/latest/_documentation/?search=_1_tutorials
+ [__link10]: https://docs.rs/bpaf/0.10.0/bpaf/fn.long.html
+ [__link11]: crate::env()
+ [__link12]: https://docs.rs/bpaf/0.10.0/bpaf/?search=cx::Cx
+ [__link13]: https://docs.rs/bpaf/0.10.0/bpaf/?search=cx::Cx::switch
+ [__link14]: https://docs.rs/bpaf/0.10.0/bpaf/?search=cx::Cx::flag
+ [__link15]: https://docs.rs/bpaf/0.10.0/bpaf/?search=cx::Cx::req_flag
+ [__link16]: https://docs.rs/bpaf/0.10.0/bpaf/?search=cx::Cx::argument
+ [__link17]: https://docs.rs/bpaf/0.10.0/bpaf/?search=cx::Cx
+ [__link18]: https://docs.rs/bpaf/0.10.0/bpaf/fn.positional.html
+ [__link19]: https://docs.rs/bpaf/0.10.0/bpaf/?search=cx::Cx::strict
+ [__link2]: https://docs.rs/_documentation/latest/_documentation/?search=_1_tutorials::_0_types_of_arguments
+ [__link20]: https://docs.rs/bpaf/0.10.0/bpaf/?search=info::OptionParser::command
+ [__link21]: https://docs.rs/bpaf/0.10.0/bpaf/fn.any.html
+ [__link22]: https://docs.rs/bpaf/0.10.0/bpaf/fn.literal.html
+ [__link23]: https://docs.rs/bpaf/0.10.0/bpaf/fn.pure.html
+ [__link24]: https://docs.rs/bpaf/0.10.0/bpaf/fn.pure_with.html
+ [__link25]: https://doc.rust-lang.org/stable/std/?search=str::FromStr
+ [__link26]: https://docs.rs/bpaf/0.10.0/bpaf/trait.Parser.html
+ [__link27]: https://docs.rs/bpaf/0.10.0/bpaf/?search=Parser::fallback
+ [__link28]: https://docs.rs/bpaf/0.10.0/bpaf/?search=Parser::fallback_with
+ [__link29]: https://docs.rs/bpaf/0.10.0/bpaf/?search=cx::Cx
+ [__link3]: https://docs.rs/_documentation/latest/_documentation/?search=_1_tutorials::_1_combinatoric_api
+ [__link30]: https://docs.rs/bpaf/0.10.0/bpaf/?search=cx::Cx
+ [__link31]: https://docs.rs/bpaf/0.10.0/bpaf/?search=cx::Cx
+ [__link32]: https://docs.rs/bpaf/0.10.0/bpaf/?search=Parser::optional
+ [__link33]: https://docs.rs/bpaf/0.10.0/bpaf/?search=cx::Cx
+ [__link34]: https://docs.rs/bpaf/0.10.0/bpaf/?search=Parser::many
+ [__link35]: https://docs.rs/bpaf/0.10.0/bpaf/?search=Parser::some
+ [__link36]: https://docs.rs/bpaf/0.10.0/bpaf/?search=Parser::collect
+ [__link37]: https://docs.rs/bpaf/0.10.0/bpaf/?search=Parser::take
+ [__link38]: https://docs.rs/bpaf/0.10.0/bpaf/?search=Parser::at_least
+ [__link39]: https://docs.rs/bpaf/0.10.0/bpaf/?search=Parser::in_range
+ [__link4]: https://docs.rs/_documentation/latest/_documentation/?search=_1_tutorials::_2_derive_api
+ [__link40]: https://docs.rs/bpaf/0.10.0/bpaf/?search=cx::Cx
+ [__link41]: https://docs.rs/bpaf/0.10.0/bpaf/?search=Parser::map
+ [__link42]: https://docs.rs/bpaf/0.10.0/bpaf/?search=Parser::parse
+ [__link43]: https://docs.rs/bpaf/0.10.0/bpaf/?search=Parser::guard
+ [__link44]: https://docs.rs/bpaf/0.10.0/bpaf/?search=Parser::to_options
+ [__link45]: crate::construct!
+ [__link46]: https://docs.rs/bpaf/0.10.0/bpaf/?search=cx::Cx
+ [__link47]: https://docs.rs/bpaf/0.10.0/bpaf/?search=cx::Cx::start_adjacent
+ [__link48]: https://docs.rs/bpaf/0.10.0/bpaf/?search=Parser::hide_usage
+ [__link49]: https://docs.rs/bpaf/0.10.0/bpaf/?search=Parser::hide
+ [__link5]: https://docs.rs/_documentation/latest/_documentation/?search=_2_howto
+ [__link50]: https://docs.rs/bpaf/0.10.0/bpaf/?search=Parser::group_help
+ [__link51]: https://docs.rs/bpaf/0.10.0/bpaf/?search=Parser::with_group_help
+ [__link52]: https://docs.rs/bpaf/0.10.0/bpaf/?search=Parser::custom_usage
+ [__link53]: https://docs.rs/bpaf/0.10.0/bpaf/?search=info::OptionParser::usage
+ [__link54]: https://docs.rs/bpaf/0.10.0/bpaf/?search=info::OptionParser::with_usage
+ [__link55]: https://docs.rs/bpaf/0.10.0/bpaf/?search=Parser::complete
+ [__link56]: https://docs.rs/bpaf/0.10.0/bpaf/?search=Parser::complete_shell
+ [__link57]: https://docs.rs/bpaf/0.10.0/bpaf/?search=info::OptionParser::render_markdown
+ [__link58]: https://docs.rs/bpaf/0.10.0/bpaf/?search=info::OptionParser::render_html
+ [__link59]: https://docs.rs/bpaf/0.10.0/bpaf/?search=info::OptionParser::render_manpage
+ [__link6]: https://docs.rs/_documentation/latest/_documentation/?search=_4_explanation
+ [__link60]: https://docs.rs/bpaf/0.10.0/bpaf/doc/index.html
+ [__link61]: https://docs.rs/bpaf/0.10.0/bpaf/?search=info::OptionParser::run
+ [__link62]: https://docs.rs/bpaf/0.10.0/bpaf/?search=info::OptionParser::check_invariants
+ [__link63]: https://docs.rs/bpaf/0.10.0/bpaf/?search=info::OptionParser::run_inner
+ [__link64]: https://docs.rs/bpaf/0.10.0/bpaf/?search=args::Args
+ [__link65]: https://doc.rust-lang.org/stable/std/convert/trait.From.html
+ [__link66]: https://docs.rs/bpaf/0.10.0/bpaf/?search=args::Args::set_comp
+ [__link67]: https://docs.rs/bpaf/0.10.0/bpaf/?search=args::Args::set_name
+ [__link68]: https://docs.rs/bpaf/0.10.0/bpaf/?search=error::ParseFailure
+ [__link69]: https://docs.rs/bpaf/0.10.0/bpaf/?search=error::ParseFailure::exit_code
+ [__link7]: https://github.com/pacak/bpaf/discussions
+ [__link70]: https://docs.rs/bpaf/0.10.0/bpaf/?search=error::ParseFailure::unwrap_stdout
+ [__link71]: https://docs.rs/bpaf/0.10.0/bpaf/?search=error::ParseFailure::unwrap_stderr
+ [__link72]: https://docs.rs/bpaf/0.10.0/bpaf/?search=info::OptionParser::render_markdown
+ [__link73]: https://docs.rs/bpaf/0.10.0/bpaf/?search=doc
+ [__link8]: https://docs.rs/bpaf/0.10.0/bpaf/?search=cx::Cx
+ [__link9]: https://docs.rs/bpaf/0.10.0/bpaf/fn.short.html

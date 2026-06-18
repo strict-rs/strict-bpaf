@@ -31,8 +31,8 @@
 // "hello" [margin 8] "world" is rendered as "hello   world"
 
 use super::{
-    splitter::{split, Chunk},
     Block, Doc, Skip, Token,
+    splitter::{Chunk, split},
 };
 
 #[cfg(feature = "color")]
@@ -80,7 +80,7 @@ impl Default for Color {
 
         #[cfg(feature = "color")]
         {
-            use supports_color::{on, Stream};
+            use supports_color::{Stream, on};
             if !(on(Stream::Stdout).is_some() && on(Stream::Stderr).is_some()) {
                 res = Color::Monochrome;
             }

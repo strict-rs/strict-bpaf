@@ -29,8 +29,8 @@ cat";
 fn all_options_fish() {
     let buf = fish_comptest("coreutils \t").unwrap();
     let expected = r"% coreutils
-arch                                             (Print machine architecture.)  basename
-b2sum                             (Print or check BLAKE2 (512-bit) checksums.)  cat
+arch    (Print machine architecture.)                                           basename
+b2sum   (Print or check BLAKE2 (512-bit) checksums.)                            cat
 base32  (Base32 encode or decode FILE, or standard input, to standard output.)";
     assert_eq!(buf, expected);
 }
@@ -64,7 +64,7 @@ fn cat_fish() {
     assert_eq!(
         buf,
         r"% coreutils cat --
-build.rs  Cargo.toml  src/  tests/"
+AGENTS.md  build.rs  Cargo.toml  CLAUDE.md  src/  tests/"
     );
 }
 

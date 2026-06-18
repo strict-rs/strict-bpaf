@@ -1,8 +1,8 @@
 use crate::{
-    metadata::{bpaf_passthough_for, Exec},
+    metadata::{Exec, bpaf_passthough_for},
     opts::parse_runnable,
     remember_opt, remember_req,
-    shared::{cargo_opts, parse_package, CargoOpts},
+    shared::{CargoOpts, cargo_opts, parse_package},
 };
 use bpaf::*;
 use std::{cell::RefCell, ffi::OsString, process::Command, rc::Rc};

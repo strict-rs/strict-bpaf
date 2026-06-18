@@ -1,7 +1,6 @@
-[package]
-name = "bpaf"
-version = "0.9.26"
-edition = "2021"
+[workspace.package]
+version = "0.10.0"
+edition = "2024"
 categories = ["command-line-interface"]
 description = "A simple Command Line Argument Parser with parser combinators"
 keywords = ["args", "arguments", "cli", "parser", "parse"]
@@ -9,7 +8,60 @@ authors = [ "Michael Baykov <manpacket@gmail.com>" ]
 readme = "README.md"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/pacak/bpaf"
-rust-version = "1.68"
+rust-version = "1.96"
+
+[workspace]
+members =  [
+    ".",
+    "./bpaf_derive",
+    "./bpaf_cauwugo",
+    "./docs2",
+    "./comptester",
+    "./documentation",
+    "./legacy",
+]
+resolver = "3"
+
+[workspace.dependencies]
+# Repo crates
+bpaf = { path = "./",  version = "0.10.0", default-features = false }
+bpaf_derive = { path = "./bpaf_derive", version = "0.10.0" }
+bpaf_cauwugo = { path = "./bpaf_cauwugo", version = "0.10.0" }
+comptester = { path = "./comptester", version = "0.10.0" }
+documentation = { path = "./documentation", version = "0.10.0" }
+docs2 = { path = "./docs2", version = "0.10.0" }
+
+# External dependencies
+syn = { version = "2.0.117", default-features = false }
+cargo_metadata = "0.23.1"
+trybuild = "1.0"
+once_cell = "1.21.4"
+proc-macro2 = "1.0.106"
+quote = "1.0.45"
+darling = "0.23"
+pretty_assertions = "1.4"
+vt100 = "0.16"
+ptyprocess = "0.5.0"
+anyhow = "1.0.102"
+shell-words = "1.1.1"
+owo-colors = { version = "4.3", default-features = false }
+supports-color = { version = "3.0" }
+
+[workspace.metadata.cauwugo]
+bpaf = true
+
+[package]
+name = "bpaf"
+version.workspace = true
+edition.workspace = true
+categories = ["command-line-interface"]
+description = "A simple Command Line Argument Parser with parser combinators"
+keywords = ["args", "arguments", "cli", "parser", "parse"]
+authors.workspace = true
+readme = "README.md"
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
 include = [
   "src/**/*",
   "Cargo.toml",
@@ -19,21 +71,19 @@ include = [
   "examples/**/*"
 ]
 
-
 [dependencies]
-bpaf_derive = { path = "./bpaf_derive", version = "=0.5.26", optional = true }
-owo-colors = { version = ">=3.5, <5.0", default-features = false, optional = true }
-supports-color = { version = ">=2.0.0, <4.0", optional = true }
+bpaf_derive = { workspace = true, optional = true }
+owo-colors = { workspace = true, optional = true }
+supports-color = { workspace = true, optional = true }
 
 [dev-dependencies]
-bpaf = { path = ".",  features = ["derive", "extradocs", "autocomplete", "docgen", "batteries", "dull-color"] }
-
+bpaf = { workspace = true,  features = ["derive", "extradocs", "autocomplete", "docgen", "batteries", "dull-color"] }
+trybuild.workspace = true
 
 [package.metadata.docs.rs]
 features = ["unstable-docs"]
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
 rustdoc-args = ["--generate-link-to-definition"]
-
 
 [features]
 derive = ["bpaf_derive"]
@@ -49,16 +99,3 @@ docgen = []
 
 # this feature is used for local development to make it easier to generate documentation
 unstable-docs = ["derive", "extradocs", "autocomplete", "batteries", "docgen"]
-
-[workspace.metadata.cauwugo]
-bpaf = true
-
-[workspace]
-members =  [
-    ".",
-    "./bpaf_derive",
-    "./bpaf_cauwugo",
-    "./docs2",
-    "./comptester",
-    "./documentation",
-]

@@ -34,7 +34,7 @@ use bpaf::Parser;
 use std::{cell::RefCell, rc::Rc};
 
 /// Stash successfully parsed value in a RefCell
-pub fn remember_opt<P, T>(parser: P, cell: &Rc<RefCell<T>>) -> impl Parser<T>
+pub fn remember_opt<P, T>(parser: P, cell: &Rc<RefCell<T>>) -> impl Parser<T> + use<P, T>
 where
     P: Parser<T>,
     T: Clone + 'static,
@@ -49,7 +49,7 @@ where
 /// Stash successfully parsed value in a RefCell.
 ///
 /// Unlike [`remember_opt`] this one parses a required value
-pub fn remember_req<P, T>(parser: P, cell: &Rc<RefCell<Option<T>>>) -> impl Parser<T>
+pub fn remember_req<P, T>(parser: P, cell: &Rc<RefCell<Option<T>>>) -> impl Parser<T> + use<P, T>
 where
     P: Parser<T>,
     T: Clone + 'static,

@@ -1,4 +1,4 @@
-use cargo_metadata::{CargoOpt, Metadata, MetadataCommand, Target};
+use cargo_metadata::{CargoOpt, Metadata, MetadataCommand, Target, TargetKind};
 use once_cell::sync::Lazy;
 use std::process::Command;
 
@@ -61,7 +61,7 @@ impl<'a> MatchKind<'a> {
 pub fn matching_targets<'a>(
     package: MatchKind<'a>,
     name: MatchKind<'a>,
-    kinds: &'static [&'static str],
+    kinds: &'static [TargetKind],
 ) -> impl Iterator<Item = Exec> + 'a {
     METADATA
         .packages
@@ -71,33 +71,30 @@ pub fn matching_targets<'a>(
             p.targets
                 .iter()
                 .filter(move |t| {
-                    name.matches(&t.name)
-                        && t.kind
-                            .first()
-                            .is_some_and(|kind| kinds.contains(&kind.as_str()))
+                    name.matches(&t.name) && t.kind.first().is_some_and(|kind| kinds.contains(kind))
                 })
-                .filter_map(|t| match t.kind.first()?.as_str() {
-                    "bin" => Some(Exec::Bin {
+                .filter_map(|t| match t.kind.first()? {
+                    TargetKind::Bin => Some(Exec::Bin {
                         pkg: &p.name,
                         name: &t.name,
                     }),
-                    "example" => Some(Exec::Example {
+                    TargetKind::Example => Some(Exec::Example {
                         pkg: &p.name,
                         name: &t.name,
                     }),
-                    "test" => Some(Exec::Test {
+                    TargetKind::Test => Some(Exec::Test {
                         pkg: &p.name,
                         name: &t.name,
                     }),
-                    "bench" => Some(Exec::Bench {
+                    TargetKind::Bench => Some(Exec::Bench {
                         pkg: &p.name,
                         name: &t.name,
                     }),
-                    "lib" => Some(Exec::Lib {
+                    TargetKind::Lib => Some(Exec::Lib {
                         pkg: &p.name,
                         name: &t.name,
                     }),
-                    "proc-macro" => Some(Exec::ProcMacro {
+                    TargetKind::ProcMacro => Some(Exec::ProcMacro {
                         pkg: &p.name,
                         name: &t.name,
                     }),
@@ -137,16 +134,16 @@ pub enum Exec {
 impl Exec {
     pub fn matches(&self, package: Option<&str>, target: &Target) -> bool {
         let (&pkg, &name, kind) = match self {
-            Exec::Bin { pkg, name } => (pkg, name, "bin"),
-            Exec::Example { pkg, name } => (pkg, name, "example"),
-            Exec::Test { pkg, name } => (pkg, name, "test"),
-            Exec::Bench { pkg, name } => (pkg, name, "bench"),
-            Exec::Lib { pkg, name } => (pkg, name, "lib"),
-            Exec::ProcMacro { pkg, name } => (pkg, name, "lib"),
+            Exec::Bin { pkg, name } => (pkg, name, TargetKind::Bin),
+            Exec::Example { pkg, name } => (pkg, name, TargetKind::Example),
+            Exec::Test { pkg, name } => (pkg, name, TargetKind::Test),
+            Exec::Bench { pkg, name } => (pkg, name, TargetKind::Bench),
+            Exec::Lib { pkg, name } => (pkg, name, TargetKind::Lib),
+            Exec::ProcMacro { pkg, name } => (pkg, name, TargetKind::Lib),
         };
         name == target.name
             && package.is_none_or(|p| p == pkg)
-            && target.kind.first().map(String::as_str) == Some(kind)
+            && target.kind.first() == Some(&kind)
     }
 
     pub fn name(self) -> &'static str {

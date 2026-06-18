@@ -3,7 +3,7 @@
 
 > --help
 
-You can mix `any` with regular options, here [`switch`](NamedArg::switch) `turbo` works because it goes
+You can mix `any` with regular options, here [`switch`](crate::Cx::switch) `turbo` works because it goes
 before `rest` in the parser declaration
 
 > --turbo git commit -m "hello world"

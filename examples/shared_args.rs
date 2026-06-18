@@ -3,14 +3,12 @@
 use bpaf::*;
 
 #[derive(Debug, Clone, Bpaf)]
-#[allow(dead_code)]
 struct Action {
     verbose: bool,
     number: u32,
 }
 
 #[derive(Debug, Clone, Bpaf)]
-#[allow(dead_code)]
 struct Build {
     verbose: bool,
 }
@@ -33,8 +31,19 @@ fn parse_command() -> impl Parser<(Command, Vec<String>)> {
     construct!([action, build])
 }
 
-fn main() {
-    let opts = parse_command().to_options().run();
+fn print_command(command: Command, args: Vec<String>) {
+    match command {
+        Command::Action(Action { verbose, number }) => {
+            println!("action: verbose={verbose}, number={number}, args={args:?}");
+        }
+        Command::Build(Build { verbose }) => {
+            println!("build: verbose={verbose}, args={args:?}");
+        }
+    }
+}
 
-    println!("{:?}", opts);
+fn main() {
+    let (command, args) = parse_command().to_options().run();
+
+    print_command(command, args);
 }

@@ -2,14 +2,15 @@ use std::cell::RefCell;
 use std::{collections::BTreeSet, rc::Rc};
 
 use bpaf::*;
+use cargo_metadata::TargetKind;
 
-use crate::add::{parse_add, Add};
-use crate::build::{parse_build, Build};
-use crate::check::{parse_check, Check};
-use crate::clean::{parse_clean, Clean};
-use crate::metadata::{matching_targets, Exec, MatchKind};
-use crate::run::{parse_run, Run};
-use crate::test::{parse_test, Test};
+use crate::add::{Add, parse_add};
+use crate::build::{Build, parse_build};
+use crate::check::{Check, parse_check};
+use crate::clean::{Clean, parse_clean};
+use crate::metadata::{Exec, MatchKind, matching_targets};
+use crate::run::{Run, parse_run};
+use crate::test::{Test, parse_test};
 use crate::unique_match;
 
 #[derive(Debug, Clone, Bpaf)]
@@ -74,7 +75,7 @@ where
 pub fn complete_target_kind<S: AsRef<str>>(
     input: &[S],
     package: Option<&'static str>,
-    kinds: &'static [&'static str],
+    kinds: &'static [TargetKind],
 ) -> Vec<(String, Option<String>)> {
     let targets =
         matching_targets(MatchKind::exact(package), MatchKind::Any, kinds).map(Exec::name);
@@ -86,7 +87,7 @@ pub fn parse_runnable(package: Rc<RefCell<Option<&'static str>>>) -> impl Parser
     let example = parse_example(package.clone());
 
     let package0 = package.clone();
-    const RUNNABLE: &[&str] = &["bin", "example"];
+    const RUNNABLE: &[TargetKind] = &[TargetKind::Bin, TargetKind::Example];
     let pos = positional::<String>("EXE")
         .complete(move |i| complete_target_kind(&[i], *package.borrow(), RUNNABLE))
         .parse::<_, _, String>(move |name| {
@@ -106,24 +107,42 @@ pub fn parse_runnable(package: Rc<RefCell<Option<&'static str>>>) -> impl Parser
 pub fn parse_testable(package: Rc<RefCell<Option<&'static str>>>) -> impl Parser<Exec> {
     let bin = parse_bin(package.clone());
     let example = parse_example(package.clone());
-    let test = parse_exec_target('t', "test", "use this test", &["test"], package.clone());
-    let bench = parse_exec_target('b', "bench", "use this benchmark", &["bench"], package);
+    let test = parse_exec_target(
+        't',
+        "test",
+        "use this test",
+        &[TargetKind::Test],
+        package.clone(),
+    );
+    let bench = parse_exec_target(
+        'b',
+        "bench",
+        "use this benchmark",
+        &[TargetKind::Bench],
+        package,
+    );
     construct!([bin, example, test, bench])
 }
 
 fn parse_bin(package: Rc<RefCell<Option<&'static str>>>) -> impl Parser<Exec> {
-    parse_exec_target('b', "bin", "use this binary", &["bin"], package)
+    parse_exec_target('b', "bin", "use this binary", &[TargetKind::Bin], package)
 }
 
 fn parse_example(package: Rc<RefCell<Option<&'static str>>>) -> impl Parser<Exec> {
-    parse_exec_target('e', "example", "use this example", &["example"], package)
+    parse_exec_target(
+        'e',
+        "example",
+        "use this example",
+        &[TargetKind::Example],
+        package,
+    )
 }
 
 fn parse_exec_target(
     short_name: char,
     long_name: &'static str,
     help: &'static str,
-    kinds: &'static [&'static str],
+    kinds: &'static [TargetKind],
     package: Rc<RefCell<Option<&'static str>>>,
 ) -> impl Parser<Exec> {
     let package0 = package.clone();

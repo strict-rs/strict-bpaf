@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use crate::{complete_gen::ShowComp, Error, Meta, Parser, State};
+use crate::{Error, Meta, Parser, State, complete_gen::ShowComp};
 
 struct Shell<'a>(&'a str);
 
@@ -70,13 +70,14 @@ pub enum ShellComp {
 
 /// Parser that inserts static shell completion into bpaf's dynamic shell completion
 #[cfg(feature = "autocomplete")]
-pub struct ParseCompShell<P> {
+#[doc(hidden)]
+pub struct CompleteShell<P> {
     pub(crate) inner: P,
     pub(crate) op: crate::complete_shell::ShellComp,
 }
 
 #[cfg(feature = "autocomplete")]
-impl<P, T> Parser<T> for ParseCompShell<P>
+impl<P, T> Parser<T> for CompleteShell<P>
 where
     P: Parser<T> + Sized,
 {
@@ -234,11 +235,11 @@ pub(crate) fn render_bash(
     }
     let mut prev = "";
     for item in items.iter() {
-        if let Some(group) = &item.extra.group {
-            if prev != group {
-                prev = group;
-                writeln!(res, "COMPREPLY+=({})", Shell(group))?;
-            }
+        if let Some(group) = &item.extra.group
+            && prev != group
+        {
+            prev = group;
+            writeln!(res, "COMPREPLY+=({})", Shell(group))?;
         }
         writeln!(res, "COMPREPLY+=({})", Shell(&item.to_string()))?;
     }

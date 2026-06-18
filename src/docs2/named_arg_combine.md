@@ -6,7 +6,7 @@ pub enum Output {
     ToConsole,
 }
 pub fn options() -> OptionParser<(usize, Output, bool)> {
-    // In most cases you don't keep `NamedArg` around long enough
+    // In most cases you don't keep `Cx<Named>` around long enough
     // to assign it a name
     let size = short('s')
         .long("size")

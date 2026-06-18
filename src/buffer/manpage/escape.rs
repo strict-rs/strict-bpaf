@@ -127,7 +127,7 @@ where
 
 #[cfg(test)]
 mod test {
-    use super::{escape_to_string, Apostrophes, Escape};
+    use super::{Apostrophes, Escape, escape_to_string};
 
     #[test]
     fn sample() {

@@ -38,7 +38,12 @@ fn dump_fish_completer(name: &str) {
     if test (commandline --current-process) != (string trim (commandline --current-process))
         set tmpline $tmpline ""
     end
-    eval $current[1] \"$tmpline\"
+    set -l result (eval $current[1] \"$tmpline\")
+    if set -q result[1]
+        printf '%s\n' $result
+    else
+        __fish_complete_path (commandline -ct)
+    end
 end
 
 complete --no-files --command {name} --arguments '(_bpaf_dynamic_completion)'

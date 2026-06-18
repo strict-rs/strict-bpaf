@@ -228,8 +228,8 @@ functor, but not how the values are parsed or how they can be extracted.
 ## Putting the values into a context
 
 Similarly to how `Reader` defined above `bpaf`'s `Parsers` don't actually have values inside
-until they are executed. Instead starting points ([`flag`](NamedArg::flag), [`positional`],
-[`argument`](NamedArg::argument), etc) define what exactly needs to be consumed, various mapping
+until they are executed. Instead starting points ([`flag`](crate::Cx::flag), [`positional`],
+[`argument`](crate::Cx::argument), etc) define what exactly needs to be consumed, various mapping
 functions define transformations, [`construct!`] composes them and defines the relative order
 values should be consumed. Not everything present inside [`Parser`] can be repesented in terms
 of plain applicative functors - specifically [`parse`](Parser::parse) is not and it is best

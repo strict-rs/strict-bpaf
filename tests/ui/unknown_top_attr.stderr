@@ -1,0 +1,5 @@
+error: Unexpected attribute for top level annotation
+ --> tests/ui/unknown_top_attr.rs:5:17
+  |
+5 | #[bpaf(options, nonsense)]
+  |                 ^^^^^^^^

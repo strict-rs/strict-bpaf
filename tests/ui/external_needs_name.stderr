@@ -1,0 +1,5 @@
+error: Can't derive name for this external, try specifying one
+ --> tests/ui/external_needs_name.rs:6:20
+  |
+6 | struct Opts(#[bpaf(external)] u32);
+  |                    ^^^^^^^^

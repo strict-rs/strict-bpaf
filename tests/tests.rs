@@ -797,7 +797,7 @@ Available options:
     -h, --help     Prints help information
 ";
     assert_eq!(expected_help, help);
-    std::env::set_var(name, "top s3cr3t");
+    unsafe { std::env::set_var(name, "top s3cr3t") };
 
     let help = parser.run_inner(&["-h"]).unwrap_err().unwrap_stdout();
     let expected_help = "\
@@ -819,15 +819,11 @@ Available options:
 
 #[test]
 fn default_plays_nicely_with_command() {
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, Default)]
     enum Foo {
         Foo,
+        #[default]
         Bar,
-    }
-    impl Default for Foo {
-        fn default() -> Self {
-            Foo::Bar
-        }
     }
 
     let cmd = pure(Foo::Foo)
@@ -892,8 +888,7 @@ Available commands:
         .unwrap_err()
         .unwrap_stdout();
 
-    let expected_help =
-        "inner descr\n\nUsage: foo \n\nAvailable options:\n    -h, --help  Prints help information\n";
+    let expected_help = "inner descr\n\nUsage: foo \n\nAvailable options:\n    -h, --help  Prints help information\n";
     assert_eq!(expected_help, help);
 
     // hidden and visible aliases are working
@@ -1697,7 +1692,7 @@ Available options:
 
 #[test]
 fn many_env() {
-    std::env::set_var("USER1", "top s3cr3t");
+    unsafe { std::env::set_var("USER1", "top s3cr3t") };
     let parser = short('v')
         .env("USER1")
         .argument::<String>("USER")
@@ -1709,7 +1704,7 @@ fn many_env() {
 
 #[test]
 fn env_hidden_arg() {
-    std::env::set_var("USER1", "top s3cr3t");
+    unsafe { std::env::set_var("USER1", "top s3cr3t") };
     let parser = env("USER1").argument::<String>("USER").to_options();
     let r = parser.run_inner(&[]).unwrap();
     assert_eq!(r, "top s3cr3t");
@@ -1717,7 +1712,7 @@ fn env_hidden_arg() {
 
 #[test]
 fn env_hidden_switch() {
-    std::env::set_var("USER1", "top s3cr3t");
+    unsafe { std::env::set_var("USER1", "top s3cr3t") };
     let parser = env("USER1").switch().to_options();
     let r = parser.run_inner(&[]).unwrap();
     assert!(r);
@@ -1725,7 +1720,7 @@ fn env_hidden_switch() {
 
 #[test]
 fn env_hidden_flag() {
-    std::env::set_var("USER1", "top s3cr3t");
+    unsafe { std::env::set_var("USER1", "top s3cr3t") };
     let parser = env("USER1").flag(true, false).to_options();
     let r = parser.run_inner(&[]).unwrap();
     assert!(r);
@@ -1733,7 +1728,7 @@ fn env_hidden_flag() {
 
 #[test]
 fn some_env() {
-    std::env::set_var("USER1", "top s3cr3t");
+    unsafe { std::env::set_var("USER1", "top s3cr3t") };
     let parser = short('v')
         .env("USER1")
         .argument::<String>("USER")

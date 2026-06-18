@@ -3,7 +3,7 @@ use crate::args::Arg;
 #[test]
 #[cfg(any(windows, unix))]
 fn wtf_shenanigans_1() {
-    use crate::args::{split_os_argument, Arg, ArgType};
+    use crate::args::{Arg, ArgType, split_os_argument};
     use std::ffi::OsString;
 
     for (i_c, prefix) in [
@@ -42,7 +42,7 @@ fn wtf_shenanigans_1() {
 
 #[test]
 fn wtf_shenanigans_2() {
-    use crate::args::{split_os_argument, split_os_argument_fallback, ArgType};
+    use crate::args::{ArgType, split_os_argument, split_os_argument_fallback};
     use std::ffi::OsString;
 
     for (i_c, prefix) in [
@@ -124,4 +124,56 @@ fn choice_with_folds_non_empty_parsers() {
     let parser = choice_with(vec![a, b], "unused").to_options();
     assert_eq!(parser.run_inner(&["-a"]).unwrap(), 1);
     assert_eq!(parser.run_inner(&["-b"]).unwrap(), 2);
+}
+
+#[test]
+fn render_message_stderr_failure() {
+    use bpaf::doc::ColorChoice;
+    use bpaf::*;
+    let parser = short('n').argument::<u32>("N").to_options();
+    // missing required argument produces a `Stderr` failure
+    let failure = parser.run_inner(&[]).unwrap_err();
+
+    for choice in [ColorChoice::Never, ColorChoice::Always, ColorChoice::Auto] {
+        let rendered = failure.render_message(choice, 80);
+        assert_eq!(rendered.stream, MessageStream::Stderr);
+        assert_eq!(rendered.exit_code, 1);
+        assert!(
+            rendered.text.ends_with('\n'),
+            "missing trailing newline: {:?}",
+            rendered.text
+        );
+        assert!(
+            rendered.text.trim().len() > 1,
+            "empty rendered message: {:?}",
+            rendered.text
+        );
+    }
+
+    // `Never` must not emit any ANSI styling.
+    let plain = failure.render_message(ColorChoice::Never, 80);
+    assert!(
+        !plain.text.contains('\u{1b}'),
+        "ColorChoice::Never emitted ANSI escapes: {:?}",
+        plain.text
+    );
+}
+
+#[test]
+fn render_message_stdout_help() {
+    use bpaf::doc::ColorChoice;
+    use bpaf::*;
+    let parser = short('n').argument::<u32>("N").to_options();
+    // `--help` produces a `Stdout` failure with exit code 0
+    let failure = parser.run_inner(&["--help"]).unwrap_err();
+
+    let rendered = failure.render_message(ColorChoice::Never, 80);
+    assert_eq!(rendered.stream, MessageStream::Stdout);
+    assert_eq!(rendered.exit_code, 0);
+    assert!(
+        rendered.text.contains("Usage"),
+        "help output without a usage line: {:?}",
+        rendered.text
+    );
+    assert!(!rendered.text.contains('\u{1b}'));
 }

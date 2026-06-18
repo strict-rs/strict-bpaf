@@ -15,11 +15,11 @@
 // complete short names to long names if possible
 
 use crate::{
+    Doc, ShellComp,
     args::{Arg, State},
     complete_shell::{render_bash, render_fish, render_simple, render_test, render_zsh},
     item::ShortLong,
-    parsers::NamedArg,
-    Doc, ShellComp,
+    params::Named,
 };
 use std::ffi::OsStr;
 
@@ -46,37 +46,37 @@ impl Complete {
 
 impl State {
     /// Add a new completion hint for flag, if needed
-    pub(crate) fn push_flag(&mut self, named: &NamedArg) {
+    pub(crate) fn push_flag(&mut self, named: &Named) {
         let depth = self.depth();
-        if let Some(comp) = self.comp_mut() {
-            if let Ok(name) = ShortLong::try_from(named) {
-                comp.comps.push(Comp::Flag {
-                    extra: CompExtra {
-                        depth,
-                        group: None,
-                        help: named.help.as_ref().and_then(Doc::to_completion),
-                    },
-                    name,
-                });
-            }
+        if let Some(comp) = self.comp_mut()
+            && let Ok(name) = ShortLong::try_from(named)
+        {
+            comp.comps.push(Comp::Flag {
+                extra: CompExtra {
+                    depth,
+                    group: None,
+                    help: named.help.as_ref().and_then(Doc::to_completion),
+                },
+                name,
+            });
         }
     }
 
     /// Add a new completion hint for an argument, if needed
-    pub(crate) fn push_argument(&mut self, named: &NamedArg, metavar: &'static str) {
+    pub(crate) fn push_argument(&mut self, named: &Named, metavar: &'static str) {
         let depth = self.depth();
-        if let Some(comp) = self.comp_mut() {
-            if let Ok(name) = ShortLong::try_from(named) {
-                comp.comps.push(Comp::Argument {
-                    extra: CompExtra {
-                        depth,
-                        group: None,
-                        help: named.help.as_ref().and_then(Doc::to_completion),
-                    },
-                    metavar,
-                    name,
-                });
-            }
+        if let Some(comp) = self.comp_mut()
+            && let Ok(name) = ShortLong::try_from(named)
+        {
+            comp.comps.push(Comp::Argument {
+                extra: CompExtra {
+                    depth,
+                    group: None,
+                    help: named.help.as_ref().and_then(Doc::to_completion),
+                },
+                metavar,
+                name,
+            });
         }
     }
 
@@ -234,7 +234,7 @@ pub(crate) enum Comp {
         metavar: &'static str,
     },
 
-    ///
+    /// command name
     Command {
         extra: CompExtra,
         name: &'static str,
@@ -452,7 +452,7 @@ fn arg_matches(arg: &str, name: ShortLong) -> Option<String> {
             can_match |= arg
                 .strip_prefix('-')
                 .and_then(|a| a.strip_prefix(s))
-                .map_or(false, str::is_empty);
+                .is_some_and(str::is_empty);
         }
     }
 
@@ -460,7 +460,7 @@ fn arg_matches(arg: &str, name: ShortLong) -> Option<String> {
     match name {
         ShortLong::Short(_) => {}
         ShortLong::Long(l) | ShortLong::Both(_, l) => {
-            can_match |= arg.strip_prefix("--").map_or(false, |s| l.starts_with(s));
+            can_match |= arg.strip_prefix("--").is_some_and(|s| l.starts_with(s));
         }
     }
 
@@ -473,9 +473,9 @@ fn arg_matches(arg: &str, name: ShortLong) -> Option<String> {
 fn cmd_matches(arg: &str, name: &'static str, short: Option<char>) -> Option<&'static str> {
     // partial long name and exact short name match anything
     if name.starts_with(arg)
-        || short.map_or(false, |s| {
+        || short.is_some_and(|s| {
             // avoid allocations
-            arg.strip_prefix(s).map_or(false, str::is_empty)
+            arg.strip_prefix(s).is_some_and(str::is_empty)
         })
     {
         Some(name)

@@ -41,6 +41,12 @@ Available options:
 ";
     assert_eq!(expected_help, help);
 
+    let parsed = parser.run_inner(&["add", "milk"]).unwrap();
+    match parsed {
+        Action::Add(item) => assert_eq!(item, "milk"),
+        other => panic!("expected add command, got {other:?}"),
+    }
+
     let help = parser.run_inner(&["--help"]).unwrap_err().unwrap_stdout();
 
     let expected_help = "\
@@ -87,6 +93,12 @@ Available options:
     -h, --help  Prints help information
 ";
     assert_eq!(expected_help, help);
+
+    let parsed = parser.run_inner(&["add", "milk"]).unwrap();
+    match parsed {
+        Action::Add(item) => assert_eq!(item, "milk"),
+        other => panic!("expected add command, got {other:?}"),
+    }
 
     let help = parser.run_inner(&["--help"]).unwrap_err().unwrap_stdout();
 

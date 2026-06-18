@@ -1,7 +1,5 @@
 use syn::{PathArguments, Type};
 
-pub(crate) use crate::named_field::StructField;
-
 #[derive(PartialEq, Debug, Clone)]
 pub(crate) enum Shape {
     /// Option<T>
@@ -34,10 +32,10 @@ pub(crate) fn split_type(ty: &Type) -> Shape {
     }
 
     fn try_split_type(ty: &Type) -> Option<Shape> {
-        if let Type::Tuple(syn::TypeTuple { elems, .. }) = ty {
-            if elems.is_empty() {
-                return Some(Shape::Unit);
-            }
+        if let Type::Tuple(syn::TypeTuple { elems, .. }) = ty
+            && elems.is_empty()
+        {
+            return Some(Shape::Unit);
         }
 
         let last = match ty {

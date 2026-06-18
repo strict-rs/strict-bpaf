@@ -162,6 +162,12 @@ fn completion_test_2() {
 File { mask: None }
 ";
     assert_eq!(r, expected);
+
+    let parsed = parser.run_inner(&["chezmoi.toml"]).unwrap();
+    match parsed {
+        Options::Process(path) => assert_eq!(path, PathBuf::from("chezmoi.toml")),
+        other => panic!("expected process command, got {other:?}"),
+    }
 }
 
 #[test]
@@ -195,6 +201,12 @@ fn completion_test_3() {
 File { mask: None }
 ";
     assert_eq!(r, expected);
+
+    let parsed = parser.run_inner(&["chezmoi.toml"]).unwrap();
+    match parsed {
+        Options::Process(path) => assert_eq!(path, PathBuf::from("chezmoi.toml")),
+        other => panic!("expected process command, got {other:?}"),
+    }
 }
 
 #[test]
@@ -228,4 +240,10 @@ fn completion_test_4() {
 ";
 
     assert_eq!(r, expected);
+
+    let parsed = parser.run_inner(&["chezmoi.toml"]).unwrap();
+    match parsed {
+        Options::Process(path) => assert_eq!(path, PathBuf::from("chezmoi.toml")),
+        other => panic!("expected process command, got {other:?}"),
+    }
 }

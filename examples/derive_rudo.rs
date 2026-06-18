@@ -3,7 +3,6 @@
 use bpaf::*;
 
 #[derive(Debug, Clone, Bpaf)]
-#[allow(dead_code)]
 #[bpaf(options)]
 struct Options {
     /// help
@@ -31,6 +30,16 @@ enum Action {
     List,
 }
 
+fn print_action(action: Action) {
+    match action {
+        Action::Add(item) => println!("add: {item}"),
+        Action::Mark(item) => println!("mark: {item}"),
+        Action::Read(item) => println!("read: {item}"),
+        Action::List => println!("list"),
+    }
+}
+
 fn main() {
-    println!("{:?}", options().run());
+    let Options { action } = options().run();
+    print_action(action);
 }

@@ -7,9 +7,9 @@ First `false` is collected from a switch even if it is not consuming anything
 > --argument 10 --argument 20 --argument 20
 
 If there's no matching parameters - it would produce an empty set. Note, in case of
-[`switch`](NamedArg::switch) parser or other parsers that can succeed without consuming anything
+[`switch`](crate::Cx::switch) parser or other parsers that can succeed without consuming anything
 it would capture that value so `many` captures the first one of those.
-You can use [`req_flag`](NamedArg::req_flag) to avoid that.
+You can use [`req_flag`](crate::Cx::req_flag) to avoid that.
 
 >
 

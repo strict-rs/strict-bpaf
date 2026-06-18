@@ -4,7 +4,7 @@ use bpaf::*;
 fn help_after_switch() {
     let parser = short('a').switch().help("this is help").to_options();
     let r = parser.run_inner(&["--help"]).unwrap_err().unwrap_stdout();
-    let expected =   "Usage: [-a]\n\nAvailable options:\n    -a          this is help\n    -h, --help  Prints help information\n";
+    let expected = "Usage: [-a]\n\nAvailable options:\n    -a          this is help\n    -h, --help  Prints help information\n";
     assert_eq!(r, expected);
 }
 
@@ -31,8 +31,7 @@ fn fallback_to_usage_nested() {
         .to_options();
 
     let r = a.run_inner(&["cmd"]).unwrap_err().unwrap_stdout();
-    let expected =
-        "Usage: cmd -a=A\n\nAvailable options:\n    -a=A\n    -h, --help  Prints help information\n";
+    let expected = "Usage: cmd -a=A\n\nAvailable options:\n    -a=A\n    -h, --help  Prints help information\n";
     assert_eq!(r, expected);
 }
 
@@ -648,7 +647,10 @@ fn help_and_version_newline() {
     let parser = short('a').switch().to_options().version("1");
 
     let r = parser.run_inner(&["--help"]).unwrap_err().unwrap_stdout();
-    assert_eq!(r, "Usage: [-a]\n\nAvailable options:\n    -a\n    -h, --help     Prints help information\n    -V, --version  Prints version information\n");
+    assert_eq!(
+        r,
+        "Usage: [-a]\n\nAvailable options:\n    -a\n    -h, --help     Prints help information\n    -V, --version  Prints version information\n"
+    );
 
     let r = parser
         .run_inner(&["--version"])

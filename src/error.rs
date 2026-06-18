@@ -1,13 +1,13 @@
 use std::ops::Range;
 
 use crate::{
+    Meta,
     args::{Arg, State},
     buffer::{Block, Color, Doc, Style, Token},
     doc::ColorChoice,
     item::{Item, ShortLong},
     meta_help::Metavar,
     meta_youmean::{Suggestion, Variant},
-    Meta,
 };
 
 /// Unsuccessful command line parsing outcome, internal representation
@@ -64,8 +64,8 @@ pub(crate) enum Message {
     ///        --foo
     NoArgument(usize, Metavar),
 
-    /// Parser is expected to consume all the things from the command line
-    /// this item will contain an index of the unconsumed value
+    /// Parser is expected to consume all the things from the command line this item will contain an
+    /// index of the unconsumed value
     Unconsumed(/* TODO - unused? */ usize),
 
     /// argument is ambigoups - parser can accept it as both a set of flags and a short flag with no =
@@ -162,9 +162,8 @@ impl Message {
 
 /// Unsuccessful command line parsing outcome, use it for unit tests
 ///
-/// When [`OptionParser::run_inner`](crate::OptionParser::run_inner) produces `Err(ParseFailure)`
-/// it means that the parser couldn't produce the value it supposed to produce and the program
-/// should terminate.
+/// When [`OptionParser::run_inner`](crate::OptionParser::run_inner) produces `Err(ParseFailure)` it means that the parser couldn't
+/// produce the value it supposed to produce and the program should terminate.
 ///
 /// If you are handling variants manually - `Stdout` contains formatted output and you can use any
 /// logging framework to produce the output, `Completion` should be printed to stdout unchanged -
@@ -182,8 +181,8 @@ impl Message {
 pub enum ParseFailure {
     /// Print this to stdout and exit with success code
     Stdout(Doc, bool),
-    /// This also goes to stdout with exit code of 0,
-    /// this cannot be Doc because completion needs more control about rendering
+    /// This also goes to stdout with exit code of 0, this cannot be Doc because completion needs
+    /// more control about rendering
     Completion(String),
     /// Print this to stderr and exit with failure code
     Stderr(Doc),
@@ -711,7 +710,11 @@ pub(crate) fn summarize_missing(items: &[MissingItem], inner: &Meta, args: &Stat
         .max_by_key(|item| (item.position, item.scope.start))
     {
         Some(x) => x,
-        None => return Message::ParseSome("parser requires an extra flag, argument or parameter, but its name is hidden by the author"),
+        None => {
+            return Message::ParseSome(
+                "parser requires an extra flag, argument or parameter, but its name is hidden by the author",
+            );
+        }
     };
 
     let mut best_scope = best_item.scope.clone();

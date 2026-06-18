@@ -39,25 +39,25 @@ fn all_options_fish() {
     //    let buf = fish_comptest("derive_show_asm \t", true).unwrap();
     let buf = fish_comptest("derive_show_asm -\t").unwrap();
 
-    let expected = "% derive_show_asm --att
---att                        (Generate assembly using AT&T style)
---bench                           (Show results from a benchmark)
---bin                                (Show results from a binary)
---color                               (Enable color highlighting)
---dry         (Produce a build plan instead of actually building)
---example                          (Show results from an example)
---frozen           (Requires Cargo.lock and cache are up to date)
---full-name  (include full demangled name instead of just prefix)
---intel                     (Generate assembly using Intel style)
---lib                            (Show results from library code)
---locked                      (Requires Cargo.lock is up to date)
---manifest-path                              (Path to Cargo.toml)
---no-color                           (Disable color highlighting)
---offline                     (Run without accessing the network)
---package                            (Package to use if ambigous)
---rust                              (Print interleaved Rust code)
---target-dir    (Custom target directory for generated artifacts)
---test                                 (Show results from a test)";
+    let expected = "% derive_show_asm --
+--att            (Generate assembly using AT&T style)
+--bench          (Show results from a benchmark)
+--bin            (Show results from a binary)
+--color          (Enable color highlighting)
+--dry            (Produce a build plan instead of actually building)
+--example        (Show results from an example)
+--frozen         (Requires Cargo.lock and cache are up to date)
+--full-name      (include full demangled name instead of just prefix)
+--intel          (Generate assembly using Intel style)
+--lib            (Show results from library code)
+--locked         (Requires Cargo.lock is up to date)
+--manifest-path  (Path to Cargo.toml)
+--no-color       (Disable color highlighting)
+--offline        (Run without accessing the network)
+--package        (Package to use if ambigous)
+--rust           (Print interleaved Rust code)
+--target-dir     (Custom target directory for generated artifacts)
+--test           (Show results from a test)";
     assert_eq!(buf, expected);
 }
 
@@ -95,10 +95,7 @@ fn zsh_example_single() {
 #[test]
 fn fish_example_single() {
     let buf = fish_comptest("derive_show_asm --example de\t").unwrap();
-    assert_eq!(
-        buf,
-        "% derive_show_asm --example derive_show_asm derive_show_asm"
-    );
+    assert_eq!(buf, "% derive_show_asm --example derive_show_asm");
 }
 
 #[test]
@@ -121,12 +118,12 @@ fn fish_example_variants() {
     let buf = fish_comptest("derive_show_asm --example co\t").unwrap();
     assert_eq!(
         buf,
-        "% derive_show_asm --example comonad
+        "% derive_show_asm --example co
 comonad  coreutils"
     );
     let buf = fish_comptest("derive_show_asm --example core\t").unwrap();
 
-    assert_eq!(buf, "% derive_show_asm --example coreutils coreutils");
+    assert_eq!(buf, "% derive_show_asm --example coreutils");
 }
 
 #[test]
@@ -171,10 +168,9 @@ fn bash_file_completion() {
     // TODO - "FUNCTION" looks a bit wonky here...
     assert_eq!(buf, "%\nCargo.toml  src/        tests/");
 
-    // file completion with mask in bash uses _filedir which
-    // renders directories all the time
-    let buf = bash_comptest("derive_show_asm --manifest-path Ca\t\t").unwrap();
-    assert_eq!(buf, "%\nCargo.toml  src/        tests/");
+    // a partial file argument with a unique match completes inline to that file
+    let buf = bash_comptest("derive_show_asm --manifest-path C\t").unwrap();
+    assert_eq!(buf, "% derive_show_asm --manifest-path Cargo.toml");
 }
 
 #[test]

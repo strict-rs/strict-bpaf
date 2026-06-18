@@ -1,15 +1,17 @@
 //! Structures that implement different methods on [`Parser`] trait
 use crate::{
+    Doc, Error, Meta, Parser,
     args::State,
     buffer::MetaInfo,
+    cx::Cx,
     error::{Message, MissingItem},
-    Doc, Error, Meta, Parser,
 };
 use std::marker::PhantomData;
 
-/// Parser that substitutes missing value with a function results but not parser
-/// failure, created with [`fallback_with`](Parser::fallback_with).
-pub struct ParseFallbackWith<T, P, F, E> {
+/// Parser that substitutes missing value with a function results but not parser failure, created
+/// with [`fallback_with`](Parser::fallback_with).
+#[doc(hidden)]
+pub struct FallbackWith<T, P, F, E> {
     pub(crate) inner: P,
     pub(crate) inner_res: PhantomData<T>,
     pub(crate) fallback: F,
@@ -17,7 +19,7 @@ pub struct ParseFallbackWith<T, P, F, E> {
     pub(crate) err: PhantomData<E>,
 }
 
-impl<T, P, F, E> Parser<T> for ParseFallbackWith<T, P, F, E>
+impl<T, P, F, E> Parser<T> for FallbackWith<T, P, F, E>
 where
     P: Parser<T>,
     F: Fn() -> Result<T, E>,
@@ -57,12 +59,13 @@ where
 }
 
 /// Parser with attached message to several fields, created with [`group_help`](Parser::group_help).
-pub struct ParseGroupHelp<P> {
+#[doc(hidden)]
+pub struct GroupHelp<P> {
     pub(crate) inner: P,
     pub(crate) message: Doc,
 }
 
-impl<T, P> Parser<T> for ParseGroupHelp<P>
+impl<T, P> Parser<T> for GroupHelp<P>
 where
     P: Parser<T>,
 {
@@ -89,13 +92,14 @@ where
     }
 }
 
-/// Parser with attached message to several fields, created with [`group_help`](Parser::group_help).
-pub struct ParseWithGroupHelp<P, F> {
+/// Parser with attached message to several fields, created with [`with_group_help`](Parser::with_group_help).
+#[doc(hidden)]
+pub struct WithGroupHelp<P, F> {
     pub(crate) inner: P,
     pub(crate) f: F,
 }
 
-impl<T, P, F> Parser<T> for ParseWithGroupHelp<P, F>
+impl<T, P, F> Parser<T> for WithGroupHelp<P, F>
 where
     P: Parser<T>,
     F: Fn(MetaInfo) -> Doc,
@@ -112,105 +116,83 @@ where
     }
 }
 
-/// Apply inner parser several times and collect results into `Vec`, created with
-/// [`some`](Parser::some), requires for at least one item to be available to succeed.
-/// Implements [`catch`](ParseMany::catch)
-pub struct ParseSome<P> {
+/// Apply inner parser several times and collect the results, created with [`many`](Parser::many), [`some`](Parser::some), [`collect`](Parser::collect),
+/// [`take`](Parser::take), [`at_least`](Parser::at_least) or [`in_range`](Parser::in_range).
+///
+/// The inner parser must succeed between `at_least` and `at_most` times (inclusive); `error` is
+/// the message used when fewer than `at_least` items are available. Implements [`catch`](Cx).
+#[doc(hidden)]
+pub struct Many<P, C, T> {
     pub(crate) inner: P,
-    pub(crate) message: &'static str,
-    pub(crate) catch: bool,
-}
-
-impl<P> ParseSome<P> {
-    #[must_use]
-    /// Handle parse failures
-    ///
-    /// Can be useful to decide to skip parsing of some items on a command line
-    /// When parser succeeds - `catch` version would return a value as usual
-    /// if it fails - `catch` would restore all the consumed values and return None.
-    ///
-    /// There's several structures that implement this attribute: [`ParseOptional`], [`ParseMany`]
-    /// and [`ParseSome`], behavior should be identical for all of them.
-    #[cfg_attr(not(doctest), doc = include_str!("docs2/some_catch.md"))]
-    pub fn catch(mut self) -> Self {
-        self.catch = true;
-        self
-    }
-}
-
-impl<T, P> Parser<Vec<T>> for ParseSome<P>
-where
-    P: Parser<T>,
-{
-    fn eval(&self, args: &mut State) -> Result<Vec<T>, Error> {
-        let mut res = Vec::new();
-        let mut len = usize::MAX;
-
-        while let Some(val) = parse_option(&self.inner, &mut len, args, self.catch)? {
-            res.push(val);
-        }
-
-        if res.is_empty() {
-            Err(Error(Message::ParseSome(self.message)))
-        } else {
-            Ok(res)
-        }
-    }
-
-    fn meta(&self) -> Meta {
-        Meta::Many(Box::new(Meta::Required(Box::new(self.inner.meta()))))
-    }
-}
-
-/// Apply inner parser several times and collect results into `FromIterator`, created with
-/// [`collect`](Parser::collect),
-/// Implements [`catch`](ParseCollect::catch)
-pub struct ParseCollect<P, C, T> {
-    pub(crate) inner: P,
+    pub(crate) error: &'static str,
+    pub(crate) at_least: u32,
+    pub(crate) at_most: u32,
     pub(crate) catch: bool,
     pub(crate) ctx: PhantomData<(C, T)>,
 }
 
-impl<T, C, P> ParseCollect<P, C, T> {
+impl<P, C, T> Cx<Many<P, C, T>> {
     #[must_use]
     /// Handle parse failures
     ///
-    /// Can be useful to decide to skip parsing of some items on a command line
-    /// When parser succeeds - `catch` version would return a value as usual
-    /// if it fails - `catch` would restore all the consumed values and return None.
-    ///
-    /// There's several structures that implement this attribute: [`ParseOptional`], [`ParseMany`]
-    /// and [`ParseSome`], behavior should be identical for all of them.
+    /// Can be useful to decide to skip parsing of some items on a command line When parser
+    /// succeeds - `catch` version would return a value as usual if it fails - `catch` would restore
+    /// all the consumed values and return None.
     #[cfg_attr(not(doctest), doc = include_str!("docs2/some_catch.md"))]
     pub fn catch(mut self) -> Self {
-        self.catch = true;
+        self.0.catch = true;
         self
     }
 }
 
-impl<T, C, P> Parser<C> for ParseCollect<P, C, T>
+impl<T, C, P> Parser<C> for Many<P, C, T>
 where
     P: Parser<T>,
     C: FromIterator<T>,
 {
     fn eval(&self, args: &mut State) -> Result<C, Error> {
         let mut len = usize::MAX;
-        std::iter::from_fn(|| parse_option(&self.inner, &mut len, args, self.catch).transpose())
-            .collect::<Result<C, Error>>()
+        let mut count = 0_u32;
+        let res = std::iter::from_fn(|| {
+            if count >= self.at_most {
+                return None;
+            }
+            match parse_option(&self.inner, &mut len, args, self.catch).transpose() {
+                Some(Ok(val)) => {
+                    count += 1;
+                    Some(Ok(val))
+                }
+                other => other,
+            }
+        })
+        .collect::<Result<C, Error>>()?;
+
+        if count >= self.at_least {
+            Ok(res)
+        } else {
+            Err(Error(Message::ParseSome(self.error)))
+        }
     }
 
     fn meta(&self) -> Meta {
-        Meta::Many(Box::new(Meta::Required(Box::new(self.inner.meta()))))
+        let inner = Box::new(self.inner.meta());
+        let inner = if self.at_least == 0 {
+            Meta::Optional(inner)
+        } else {
+            Meta::Required(inner)
+        };
+        Meta::Many(Box::new(inner))
     }
 }
 
 /// Parser that returns results as usual but not shown in `--help` output, created with
 /// [`Parser::hide`]
-pub struct ParseHide<P> {
+#[doc(hidden)]
+pub struct Hide<P> {
     pub(crate) inner: P,
 }
 
-impl<T, P> Parser<T> for ParseHide<P>
+impl<T, P> Parser<T> for Hide<P>
 where
     P: Parser<T>,
 {
@@ -241,11 +223,12 @@ where
 /// Parser that hides inner parser from usage line
 ///
 /// No other changes to the inner parser
-pub struct ParseUsage<P> {
+#[doc(hidden)]
+pub struct Usage<P> {
     pub(crate) inner: P,
     pub(crate) usage: Doc,
 }
-impl<T, P> Parser<T> for ParseUsage<P>
+impl<T, P> Parser<T> for Usage<P>
 where
     P: Parser<T>,
 {
@@ -260,12 +243,13 @@ where
 
 /// Parser that tries to either of two parsers and uses one that succeeeds, created with
 /// [`Parser::or_else`].
-pub struct ParseOrElse<T> {
+#[doc(hidden)]
+pub struct Alt<T> {
     pub(crate) this: Box<dyn Parser<T>>,
     pub(crate) that: Box<dyn Parser<T>>,
 }
 
-impl<T> Parser<T> for ParseOrElse<T> {
+impl<T> Parser<T> for Alt<T> {
     fn eval(&self, args: &mut State) -> Result<T, Error> {
         #[cfg(feature = "autocomplete")]
         let mut comp_items = Vec::new();
@@ -449,9 +433,9 @@ fn this_or_that_picks_first(
     Ok(res?.0)
 }
 
-/// Parser that transforms parsed value with a failing function, created with
-/// [`parse`](Parser::parse)
-pub struct ParseWith<T, P, F, E, R> {
+/// Parser that transforms parsed value with a failing function, created with [`parse`](Parser::parse)
+#[doc(hidden)]
+pub struct Parsed<T, P, F, E, R> {
     pub(crate) inner: P,
     pub(crate) inner_res: PhantomData<T>,
     pub(crate) parse_fn: F,
@@ -459,7 +443,7 @@ pub struct ParseWith<T, P, F, E, R> {
     pub(crate) err: PhantomData<E>,
 }
 
-impl<T, P, F, E, R> Parser<R> for ParseWith<T, P, F, E, R>
+impl<T, P, F, E, R> Parser<R> for Parsed<T, P, F, E, R>
 where
     P: Parser<T>,
     F: Fn(T) -> Result<R, E>,
@@ -478,15 +462,15 @@ where
     }
 }
 
-/// Parser that substitutes missing value but not parse failure, created with
-/// [`fallback`](Parser::fallback).
-pub struct ParseFallback<P, T> {
+/// Parser that substitutes missing value but not parse failure, created with [`fallback`](Parser::fallback).
+#[doc(hidden)]
+pub struct Fallback<P, T> {
     pub(crate) inner: P,
     pub(crate) value: T,
     pub(crate) value_str: String,
 }
 
-impl<P, T> Parser<T> for ParseFallback<P, T>
+impl<P, T> Parser<T> for Fallback<P, T>
 where
     P: Parser<T>,
     T: Clone,
@@ -521,8 +505,7 @@ where
     }
 }
 
-/// An implementation detail for [`ParseFallback::format_fallback`] and
-/// [`ParseFallbackWith::format_fallback`], to allow for custom fallback formatting.
+/// An implementation detail for [`format_fallback`](Cx), to allow for custom fallback formatting.
 struct DisplayWith<'a, T, F>(&'a T, F);
 
 impl<'a, T, F: Fn(&'a T, &mut std::fmt::Formatter<'_>) -> std::fmt::Result> std::fmt::Display
@@ -535,33 +518,30 @@ impl<'a, T, F: Fn(&'a T, &mut std::fmt::Formatter<'_>) -> std::fmt::Result> std:
     }
 }
 
-impl<P, T: std::fmt::Display> ParseFallback<P, T> {
-    /// Show [`fallback`](Parser::fallback) value in `--help` using [`Display`](std::fmt::Display)
-    /// representation
+impl<P, T: std::fmt::Display> Cx<Fallback<P, T>> {
+    /// Show [`fallback`](Parser::fallback) value in `--help` using [`Display`](std::fmt::Display) representation
     ///
     #[cfg_attr(not(doctest), doc = include_str!("docs2/dis_fallback.md"))]
     #[must_use]
     pub fn display_fallback(mut self) -> Self {
-        self.value_str = format!("[default: {}]", self.value);
+        self.0.value_str = format!("[default: {}]", self.0.value);
         self
     }
 }
 
-impl<P, T: std::fmt::Debug> ParseFallback<P, T> {
-    /// Show [`fallback`](Parser::fallback) value in `--help` using [`Debug`](std::fmt::Debug)
-    /// representation
+impl<P, T: std::fmt::Debug> Cx<Fallback<P, T>> {
+    /// Show [`fallback`](Parser::fallback) value in `--help` using [`Debug`](std::fmt::Debug) representation
     ///
     #[cfg_attr(not(doctest), doc = include_str!("docs2/deb_fallback_with.md"))]
     #[must_use]
     pub fn debug_fallback(mut self) -> Self {
-        self.value_str = format!("[default: {:?}]", self.value);
+        self.0.value_str = format!("[default: {:?}]", self.0.value);
         self
     }
 }
 
-impl<P, T> ParseFallback<P, T> {
-    /// Show [`fallback`](Parser::fallback) value in `--help` using the provided formatting
-    /// function.
+impl<P, T> Cx<Fallback<P, T>> {
+    /// Show [`fallback`](Parser::fallback) value in `--help` using the provided formatting function.
     ///
     #[cfg_attr(not(doctest), doc = include_str!("docs2/format_fallback.md"))]
     #[must_use]
@@ -569,55 +549,52 @@ impl<P, T> ParseFallback<P, T> {
         mut self,
         format: impl Fn(&T, &mut std::fmt::Formatter<'_>) -> std::fmt::Result,
     ) -> Self {
-        self.value_str = format!("[default: {}]", DisplayWith(&self.value, format));
+        self.0.value_str = format!("[default: {}]", DisplayWith(&self.0.value, format));
         self
     }
 }
 
-impl<P, T: std::fmt::Display, F, E> ParseFallbackWith<T, P, F, E>
+impl<P, T: std::fmt::Display, F, E> Cx<FallbackWith<T, P, F, E>>
 where
     F: Fn() -> Result<T, E>,
 {
-    /// Show [`fallback_with`](Parser::fallback_with) value in `--help` using [`Display`](std::fmt::Display)
-    /// representation
+    /// Show [`fallback_with`](Parser::fallback_with) value in `--help` using [`Display`](std::fmt::Display) representation
     ///
     /// If fallback function fails - no value will show up
     ///
     #[cfg_attr(not(doctest), doc = include_str!("docs2/dis_fallback_with.md"))]
     #[must_use]
     pub fn display_fallback(mut self) -> Self {
-        if let Ok(val) = (self.fallback)() {
-            self.value_str = format!("[default: {}]", val);
+        if let Ok(val) = (self.0.fallback)() {
+            self.0.value_str = format!("[default: {}]", val);
         }
         self
     }
 }
 
-impl<P, T: std::fmt::Debug, F, E> ParseFallbackWith<T, P, F, E>
+impl<P, T: std::fmt::Debug, F, E> Cx<FallbackWith<T, P, F, E>>
 where
     F: Fn() -> Result<T, E>,
 {
-    /// Show [`fallback_with`](Parser::fallback_with) value in `--help` using [`Debug`](std::fmt::Debug)
-    /// representation
+    /// Show [`fallback_with`](Parser::fallback_with) value in `--help` using [`Debug`](std::fmt::Debug) representation
     ///
     /// If fallback function fails - no value will show up
     ///
     #[cfg_attr(not(doctest), doc = include_str!("docs2/deb_fallback.md"))]
     #[must_use]
     pub fn debug_fallback(mut self) -> Self {
-        if let Ok(val) = (self.fallback)() {
-            self.value_str = format!("[default: {:?}]", val);
+        if let Ok(val) = (self.0.fallback)() {
+            self.0.value_str = format!("[default: {:?}]", val);
         }
         self
     }
 }
 
-impl<P, T, F, E> ParseFallbackWith<T, P, F, E>
+impl<P, T, F, E> Cx<FallbackWith<T, P, F, E>>
 where
     F: Fn() -> Result<T, E>,
 {
-    /// Show [`fallback_with`](Parser::fallback_with) value in `--help` using the provided
-    /// formatting function.
+    /// Show [`fallback_with`](Parser::fallback_with) value in `--help` using the provided formatting function.
     ///
     #[cfg_attr(not(doctest), doc = include_str!("docs2/format_fallback_with.md"))]
     #[must_use]
@@ -625,21 +602,22 @@ where
         mut self,
         format: impl Fn(&T, &mut std::fmt::Formatter<'_>) -> std::fmt::Result,
     ) -> Self {
-        if let Ok(val) = (self.fallback)() {
-            self.value_str = format!("[default: {}]", DisplayWith(&val, format));
+        if let Ok(val) = (self.0.fallback)() {
+            self.0.value_str = format!("[default: {}]", DisplayWith(&val, format));
         }
         self
     }
 }
 
 /// Parser fails with a message if check returns false, created with [`guard`](Parser::guard).
-pub struct ParseGuard<P, F> {
+#[doc(hidden)]
+pub struct Guard<P, F> {
     pub(crate) inner: P,
     pub(crate) check: F,
     pub(crate) message: &'static str,
 }
 
-impl<T, P, F> Parser<T> for ParseGuard<P, F>
+impl<T, P, F> Parser<T> for Guard<P, F>
 where
     P: Parser<T>,
     F: Fn(&T) -> bool,
@@ -660,12 +638,13 @@ where
 
 /// Apply inner parser as many times as it succeeds while consuming something and return this
 /// number
-pub struct ParseCount<P, T> {
+#[doc(hidden)]
+pub struct Count<P, T> {
     pub(crate) inner: P,
     pub(crate) ctx: PhantomData<T>,
 }
 
-impl<T, P> Parser<usize> for ParseCount<P, T>
+impl<T, P> Parser<usize> for Count<P, T>
 where
     P: Parser<T>,
 {
@@ -690,11 +669,12 @@ where
 
 /// Apply inner parser as many times as it succeeds while consuming something and return this
 /// number
-pub struct ParseLast<P> {
+#[doc(hidden)]
+pub struct Last<P> {
     pub(crate) inner: P,
 }
 
-impl<T, P> Parser<T> for ParseLast<P>
+impl<T, P> Parser<T> for Last<P>
 where
     P: Parser<T>,
 {
@@ -722,14 +702,14 @@ where
 }
 
 /// Apply inner parser, return a value in `Some` if items requested by it are all present, restore
-/// and return `None` if any are missing. Created with [`optional`](Parser::optional). Implements
-/// [`catch`](ParseOptional::catch)
-pub struct ParseOptional<P> {
+/// and return `None` if any are missing. Created with [`optional`](Parser::optional). Implements [`catch`](Cx).
+#[doc(hidden)]
+pub struct Optional<P> {
     pub(crate) inner: P,
     pub(crate) catch: bool,
 }
 
-impl<T, P> Parser<Option<T>> for ParseOptional<P>
+impl<T, P> Parser<Option<T>> for Optional<P>
 where
     P: Parser<T>,
 {
@@ -743,51 +723,27 @@ where
     }
 }
 
-impl<P> ParseOptional<P> {
+impl<P> Cx<Optional<P>> {
     #[must_use]
     /// Handle parse failures for optional parsers
     ///
-    /// Can be useful to decide to skip parsing of some items on a command line.
-    /// When parser succeeds - `catch` version would return a value as usual
-    /// if it fails - `catch` would restore all the consumed values and return None.
+    /// Can be useful to decide to skip parsing of some items on a command line. When parser
+    /// succeeds - `catch` version would return a value as usual if it fails - `catch` would restore
+    /// all the consumed values and return None.
     ///
-    /// `catch` won't catch errors related to partial/incomplete input, for example a named
-    /// argument that lacks a value (`--name` where parser expects `--name Alice`) or a positional
-    /// item that parser expects to be after `--`.
+    /// `catch` won't catch errors related to partial/incomplete input, for example a named argument
+    /// that lacks a value (`--name` where parser expects `--name Alice`) or a positional item that
+    /// parser expects to be after `--`.
     ///
-    /// There's several structures that implement this attribute: [`ParseOptional`], [`ParseMany`]
-    /// and [`ParseSome`], behavior should be identical for all of them.
+    /// Several parsers implement this method: those created by [`optional`](Parser::optional), [`many`](Parser::many) and [`some`](Parser::some).
+    /// Behavior should be identical for all of them.
     ///
     /// Those examples are very artificial and designed to show what difference `catch` makes, to
-    /// actually parse arguments like in examples you should [`parse`](Parser::parse) or construct
-    /// enum with alternative branches
+    /// actually parse arguments like in examples you should [`parse`](Parser::parse) or construct enum with
+    /// alternative branches
     #[cfg_attr(not(doctest), doc = include_str!("docs2/optional_catch.md"))]
     pub fn catch(mut self) -> Self {
-        self.catch = true;
-        self
-    }
-}
-
-/// Apply inner parser several times and collect results into `Vec`, created with
-/// [`many`](Parser::many), implements [`catch`](ParseMany::catch).
-pub struct ParseMany<P> {
-    pub(crate) inner: P,
-    pub(crate) catch: bool,
-}
-
-impl<P> ParseMany<P> {
-    #[must_use]
-    /// Handle parse failures
-    ///
-    /// Can be useful to decide to skip parsing of some items on a command line
-    /// When parser succeeds - `catch` version would return a value as usual
-    /// if it fails - `catch` would restore all the consumed values and return None.
-    ///
-    /// There's several structures that implement this attribute: [`ParseOptional`], [`ParseMany`]
-    /// and [`ParseSome`], behavior should be identical for all of them.
-    #[cfg_attr(not(doctest), doc = include_str!("docs2/many_catch.md"))]
-    pub fn catch(mut self) -> Self {
-        self.catch = true;
+        self.0.catch = true;
         self
     }
 }
@@ -843,25 +799,10 @@ where
     }
 }
 
-impl<T, P> Parser<Vec<T>> for ParseMany<P>
-where
-    P: Parser<T>,
-{
-    fn eval(&self, args: &mut State) -> Result<Vec<T>, Error> {
-        let mut len = usize::MAX;
-        std::iter::from_fn(|| parse_option(&self.inner, &mut len, args, self.catch).transpose())
-            .collect::<Result<Vec<T>, Error>>()
-    }
-
-    fn meta(&self) -> Meta {
-        Meta::Many(Box::new(Meta::Optional(Box::new(self.inner.meta()))))
-    }
-}
-
-/// Parser that returns a given value without consuming anything, created with
-/// [`pure`](crate::pure).
-pub struct ParsePure<T>(pub(crate) T);
-impl<T: Clone + 'static> Parser<T> for ParsePure<T> {
+/// Parser that returns a given value without consuming anything, created with [`pure`](crate::pure).
+#[doc(hidden)]
+pub struct Pure<T>(pub(crate) T);
+impl<T: Clone + 'static> Parser<T> for Pure<T> {
     fn eval(&self, args: &mut State) -> Result<T, Error> {
         args.current = None;
         Ok(self.0.clone())
@@ -872,13 +813,12 @@ impl<T: Clone + 'static> Parser<T> for ParsePure<T> {
     }
 }
 
-pub struct ParsePureWith<T, F, E>(pub(crate) F)
+#[doc(hidden)]
+pub struct PureWith<T, F, E>(pub(crate) F)
 where
     F: Fn() -> Result<T, E>,
     E: ToString;
-impl<T: Clone + 'static, F: Fn() -> Result<T, E>, E: ToString> Parser<T>
-    for ParsePureWith<T, F, E>
-{
+impl<T: Clone + 'static, F: Fn() -> Result<T, E>, E: ToString> Parser<T> for PureWith<T, F, E> {
     fn eval(&self, _args: &mut State) -> Result<T, Error> {
         match (self.0)() {
             Ok(ok) => Ok(ok),
@@ -892,11 +832,12 @@ impl<T: Clone + 'static, F: Fn() -> Result<T, E>, E: ToString> Parser<T>
 }
 
 /// Parser that fails without consuming any input, created with [`fail`](crate::fail).
-pub struct ParseFail<T> {
+#[doc(hidden)]
+pub struct Fail<T> {
     pub(crate) field1: &'static str,
     pub(crate) field2: PhantomData<T>,
 }
-impl<T> Parser<T> for ParseFail<T> {
+impl<T> Parser<T> for Fail<T> {
     fn eval(&self, args: &mut State) -> Result<T, Error> {
         args.current = None;
         Err(Error(Message::ParseFail(self.field1)))
@@ -908,13 +849,14 @@ impl<T> Parser<T> for ParseFail<T> {
 }
 
 /// Parser that transforms parsed value with a function, created with [`map`](Parser::map).
-pub struct ParseMap<T, P, F, R> {
+#[doc(hidden)]
+pub struct Map<T, P, F, R> {
     pub(crate) inner: P,
     pub(crate) inner_res: PhantomData<T>,
     pub(crate) map_fn: F,
     pub(crate) res: PhantomData<R>,
 }
-impl<P, T, F, R> Parser<R> for ParseMap<T, P, F, R>
+impl<P, T, F, R> Parser<R> for Map<T, P, F, R>
 where
     F: Fn(T) -> R,
     P: Parser<T> + Sized,
@@ -930,21 +872,21 @@ where
 }
 
 /// Create parser from a function, [`construct!`](crate::construct!) uses it internally
-pub struct ParseCon<P> {
+#[doc(hidden)]
+pub struct Con<P> {
     /// inner parser closure
     pub inner: P,
     /// metas for inner parsers
     pub meta: Meta,
-    /// To produce a better error messages while parsing constructed values
-    /// we want to look at all the items so values that can be consumed are consumed
-    /// autocomplete relies on the same logic
+    /// To produce a better error messages while parsing constructed values we want to look at all
+    /// the items so values that can be consumed are consumed autocomplete relies on the same logic
     ///
     /// However when dealing with adjacent restriction detecting the first item relies on failing
     /// fast
     pub failfast: bool,
 }
 
-impl<T, P> Parser<T> for ParseCon<P>
+impl<T, P> Parser<T> for Con<P>
 where
     P: Fn(bool, &mut State) -> Result<T, Error>,
 {
@@ -959,7 +901,7 @@ where
     }
 }
 
-impl<T> ParseCon<T> {
+impl<T> Cx<Con<T>> {
     #[must_use]
     /// Automagically restrict the inner parser scope to accept adjacent values only
     ///
@@ -974,8 +916,8 @@ impl<T> ParseCon<T> {
     /// - <code>**-a** -b **-c** -d</code>
     /// - <code>**-a** **-c** -b -d</code>
     ///
-    /// In the first example `-b` breaks the adjacency for all the consumed items so parsing will fail,
-    /// while here in the second one all the consumed items are adjacent to each other so
+    /// In the first example `-b` breaks the adjacency for all the consumed items so parsing will
+    /// fail, while here in the second one all the consumed items are adjacent to each other so
     /// parsing will succeed.
     ///
     /// # Multi-value arguments
@@ -989,8 +931,8 @@ impl<T> ParseCon<T> {
     #[cfg_attr(not(doctest), doc = include_str!("docs2/adjacent_struct_1.md"))]
     ///
     /// # Chaining commands
-    /// This example explains [`adjacent`](crate::params::ParseCommand::adjacent), but the same idea holds.
-    /// Parsing things like `cmd1 --arg1 cmd2 --arg2 --arg3 cmd3 --flag`
+    /// This example explains [`adjacent`](Cx), but the same idea holds. Parsing things like
+    /// `cmd1 --arg1 cmd2 --arg2 --arg3 cmd3 --flag`
     ///
     #[cfg_attr(not(doctest), doc = include_str!("docs2/adjacent_command.md"))]
     ///
@@ -1016,35 +958,47 @@ impl<T> ParseCon<T> {
     /// logic: instead of restricting, for example "sum of two fields to be 5 or greater" *inside* the
     /// `adjacent` parser, you can restrict it *outside*, once `adjacent` done the parsing.
     ///
-    /// There's also similar method [`adjacent`](crate::parsers::ParseArgument) that allows to restrict argument
-    /// parser to work only for arguments where both key and a value are in the same shell word:
-    /// `-f=bar` or `-fbar`, but not `-f bar`.
-    pub fn adjacent(mut self) -> ParseAdjacent<Self> {
-        self.failfast = true;
-        ParseAdjacent { inner: self }
+    /// There's also similar method [`adjacent`](Cx) that allows to restrict argument parser to work
+    /// only for arguments where both key and a value are in the same shell word: `-f=bar` or `-fbar`,
+    /// but not `-f bar`.
+    pub fn adjacent(mut self) -> Cx<Adjacent<Con<T>>> {
+        self.0.failfast = true;
+        Cx(Adjacent { inner: self.0 })
+    }
+
+    /// Left-anchored adjacency
+    ///
+    /// Like [`adjacent`](Cx), but the consumed block must begin at the current position with no unparsed
+    /// items to its left, so the parser stops looking past the first gap rather than scanning for a
+    /// block further to the right.
+    #[must_use]
+    pub fn start_adjacent(mut self) -> Cx<StartAdjacent<Con<T>>> {
+        self.0.failfast = true;
+        Cx(StartAdjacent { inner: self.0 })
     }
 }
 
 /// Parser that replaces metavar placeholders with actual info in shell completion
 #[cfg(feature = "autocomplete")]
-pub struct ParseComp<P, F> {
+#[doc(hidden)]
+pub struct Complete<P, F> {
     pub(crate) inner: P,
     pub(crate) op: F,
     pub(crate) group: Option<String>,
 }
 
 #[cfg(feature = "autocomplete")]
-impl<P, F> ParseComp<P, F> {
+impl<P, F> Cx<Complete<P, F>> {
     #[must_use]
     /// Attach group name to parsed values
     pub fn group(mut self, group: impl Into<String>) -> Self {
-        self.group = Some(group.into());
+        self.0.group = Some(group.into());
         self
     }
 }
 
 #[cfg(feature = "autocomplete")]
-impl<P, T, F, M> Parser<T> for ParseComp<P, F>
+impl<P, T, F, M> Parser<T> for Complete<P, F>
 where
     P: Parser<T> + Sized,
     M: Into<String>,
@@ -1060,11 +1014,11 @@ where
         // restore old, now metavars added by inner parser, if any, are in comp_items
         args.swap_comps_with(&mut comp_items);
 
-        if let Some(comp) = &mut args.comp_mut() {
-            if res.is_err() {
-                comp.extend_comps(comp_items);
-                return res;
-            }
+        if let Some(comp) = &mut args.comp_mut()
+            && res.is_err()
+        {
+            comp.extend_comps(comp_items);
+            return res;
         }
 
         let res = res?;
@@ -1130,102 +1084,139 @@ where
     }
 }*/
 
-pub struct ParseAdjacent<P> {
+#[doc(hidden)]
+pub struct Adjacent<P> {
     pub(crate) inner: P,
 }
-impl<P, T> Parser<T> for ParseAdjacent<P>
+
+/// Left-anchored sibling of [`Adjacent`] produced by [`start_adjacent`](Cx::start_adjacent): the consumed block must
+/// begin at the current position with nothing unparsed to its left.
+#[doc(hidden)]
+pub struct StartAdjacent<P> {
+    pub(crate) inner: P,
+}
+
+impl<P, T> Parser<T> for Adjacent<P>
 where
     P: Parser<T> + Sized,
 {
     fn eval(&self, args: &mut State) -> Result<T, Error> {
-        let original_scope = args.scope();
-
-        let first_item;
-        let inner_meta = self.inner.meta();
-        let mut best_error = if let Some(item) = Meta::first_item(&inner_meta) {
-            first_item = item;
-            let missing_item = MissingItem {
-                item: item.clone(),
-                position: original_scope.start,
-                scope: original_scope.clone(),
-            };
-            Message::Missing(vec![missing_item])
-        } else {
-            unreachable!("bpaf usage BUG: adjacent should start with a required argument");
-        };
-        let mut best_args = args.clone();
-        let mut best_consumed = 0;
-
-        for (start, width, mut this_arg) in args.ranges(first_item) {
-            // since we only want to parse things to the right of the first item we perform
-            // parsing in two passes:
-            // - try to run the parser showing only single argument available at all the indices
-            // - try to run the parser showing starting at that argument and to the right of it
-            // this means constructing argument parsers from req flag and positional works as
-            // expected:
-            // consider examples "42 -n" and "-n 42"
-            // without multi step approach first command line also parses into 42
-            let mut scratch = this_arg.clone();
-            scratch.set_scope(start..start + width);
-            let before = scratch.len();
-
-            // nothing to consume, might as well skip this segment right now
-            // it will most likely fail, but it doesn't matter, we are only looking for the
-            // left most match
-            if before == 0 {
-                continue;
-            }
-
-            let _ = self.inner.eval(&mut scratch);
-
-            if before == scratch.len() {
-                // failed to consume anything which means we don't start parsing at this point
-                continue;
-            }
-
-            this_arg.set_scope(start..original_scope.end);
-            let before = this_arg.len();
-
-            // values consumed by adjacent must be actually adjacent - if a scope contains
-            // already parsed values inside we need to trim it
-            if original_scope.end - start > before {
-                this_arg.set_scope(this_arg.adjacently_available_from(start));
-            }
-
-            loop {
-                match self.inner.eval(&mut this_arg) {
-                    Ok(res) => {
-                        // there's a smaller adjacent scope, we must try it before returning.
-                        if let Some(adj_scope) = this_arg.adjacent_scope(args) {
-                            this_arg = args.clone();
-                            this_arg.set_scope(adj_scope);
-                        } else {
-                            std::mem::swap(args, &mut this_arg);
-                            args.set_scope(original_scope);
-                            return Ok(res);
-                        }
-                    }
-                    Err(Error(err)) => {
-                        let consumed = before - this_arg.len();
-                        if consumed > best_consumed {
-                            best_consumed = consumed;
-                            std::mem::swap(&mut best_args, &mut this_arg);
-                            best_error = err;
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-
-        std::mem::swap(args, &mut best_args);
-        Err(Error(best_error))
+        eval_adjacent_block::<false, P, T>(&self.inner, args)
     }
 
     fn meta(&self) -> Meta {
-        let meta = self.inner.meta();
-        Meta::Adjacent(Box::new(meta))
+        Meta::Adjacent(Box::new(self.inner.meta()))
     }
+}
+
+impl<P, T> Parser<T> for StartAdjacent<P>
+where
+    P: Parser<T> + Sized,
+{
+    fn eval(&self, args: &mut State) -> Result<T, Error> {
+        eval_adjacent_block::<true, P, T>(&self.inner, args)
+    }
+
+    fn meta(&self) -> Meta {
+        Meta::Adjacent(Box::new(self.inner.meta()))
+    }
+}
+
+/// Shared evaluation for [`Adjacent`] (`START = false`) and [`StartAdjacent`] (`START = true`).
+///
+/// The two differ only in what happens when `State::ranges` hands us a candidate block that begins
+/// at a _present_ value we can't parse: a regular adjacent block skips it and keeps scanning
+/// rightward, while a left-anchored block is done — any block further right would have unparsed
+/// items to its left.
+fn eval_adjacent_block<const START: bool, P, T>(inner: &P, args: &mut State) -> Result<T, Error>
+where
+    P: Parser<T> + Sized,
+{
+    let original_scope = args.scope();
+
+    let first_item;
+    let inner_meta = inner.meta();
+    let mut best_error = if let Some(item) = Meta::first_item(&inner_meta) {
+        first_item = item;
+        let missing_item = MissingItem {
+            item: item.clone(),
+            position: original_scope.start,
+            scope: original_scope.clone(),
+        };
+        Message::Missing(vec![missing_item])
+    } else {
+        unreachable!("bpaf usage BUG: adjacent should start with a required argument");
+    };
+    let mut best_args = args.clone();
+    let mut best_consumed = 0;
+
+    for (start, width, mut this_arg) in args.ranges(first_item) {
+        // since we only want to parse things to the right of the first item we perform
+        // parsing in two passes:
+        // - try to run the parser showing only single argument available at all the indices
+        // - try to run the parser showing starting at that argument and to the right of it
+        // this means constructing argument parsers from req flag and positional works as
+        // expected:
+        // consider examples "42 -n" and "-n 42"
+        // without multi step approach first command line also parses into 42
+        let mut scratch = this_arg.clone();
+        scratch.set_scope(start..start + width);
+        let before = scratch.len();
+
+        let _ = inner.eval(&mut scratch);
+
+        if before == scratch.len() {
+            // The inner parser doesn't begin at this present item. A regular adjacent block keeps
+            // scanning rightward; a left-anchored (`start`) block is finished — its block must
+            // begin at the first still-present item, and this one is not it.
+            if START {
+                break;
+            }
+            continue;
+        }
+
+        this_arg.set_scope(start..original_scope.end);
+        let before = this_arg.len();
+
+        // values consumed by adjacent must be actually adjacent - if a scope contains
+        // already parsed values inside we need to trim it
+        if original_scope.end - start > before {
+            this_arg.set_scope(this_arg.adjacently_available_from(start));
+        }
+
+        loop {
+            match inner.eval(&mut this_arg) {
+                Ok(res) => {
+                    // there's a smaller adjacent scope, we must try it before returning.
+                    if let Some(adj_scope) = this_arg.adjacent_scope(args) {
+                        this_arg = args.clone();
+                        this_arg.set_scope(adj_scope);
+                    } else {
+                        std::mem::swap(args, &mut this_arg);
+                        args.set_scope(original_scope);
+                        return Ok(res);
+                    }
+                }
+                Err(Error(err)) => {
+                    let consumed = before - this_arg.len();
+                    if consumed > best_consumed {
+                        best_consumed = consumed;
+                        std::mem::swap(&mut best_args, &mut this_arg);
+                        best_error = err;
+                    }
+                    break;
+                }
+            }
+        }
+        // Left-anchored: only the first still-present item may begin the block, so a `start`
+        // block stops after its single candidate instead of scanning further to the right.
+        if START {
+            break;
+        }
+    }
+
+    std::mem::swap(args, &mut best_args);
+    Err(Error(best_error))
 }
 
 impl<T> Parser<T> for Box<dyn Parser<T>> {

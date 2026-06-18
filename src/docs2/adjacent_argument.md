@@ -68,7 +68,7 @@ div.bpaf-doc  { padding-left: 1em; }
 </div>
 
 
-As with regular [`argument`](NamedArg::argument) its `adjacent` variant is required by default
+As with regular [`argument`](crate::Cx::argument) its `adjacent` variant is required by default
 
 
 <div class='bpaf-doc'>

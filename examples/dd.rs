@@ -1,6 +1,6 @@
 //! This is not a typical bpaf usage,
 //! but you should be able to replicate command line used by dd
-use bpaf::{any, construct, doc::Style, short, OptionParser, Parser};
+use bpaf::{OptionParser, Parser, any, construct, doc::Style, short};
 use std::str::FromStr;
 
 #[derive(Debug, Clone)]

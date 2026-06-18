@@ -1,11 +1,11 @@
+use crate::{
+    Meta,
+    item::{Item, ShortLong},
+};
 #[cfg(feature = "docgen")]
 use crate::{
     info::Info,
     meta_help::{HelpItem, HelpItems},
-};
-use crate::{
-    item::{Item, ShortLong},
-    Meta,
 };
 
 mod console;

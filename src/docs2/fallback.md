@@ -80,9 +80,8 @@ div.bpaf-doc  { padding-left: 1em; }
 </div>
 
 
-With [`display_fallback`](ParseFallback::display_fallback) and
-[`debug_fallback`](ParseFallback::debug_fallback) you can make it so default value
-is visible in `--help` output
+With [`display_fallback`](crate::Cx) and [`debug_fallback`](crate::Cx) you can
+make it so default value is visible in `--help` output
 
 
 <div class='bpaf-doc'>

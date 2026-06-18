@@ -1,7 +1,7 @@
 use crate::{
+    Meta, State,
     item::ShortLong,
     meta_help::{HelpItem, HelpItems},
-    Meta, State,
 };
 
 #[derive(Debug, Copy, Clone)]
@@ -95,12 +95,12 @@ pub(crate) fn suggest(args: &State, meta: &Meta) -> Option<(usize, Suggestion)> 
                     let distance = damerau_levenshtein(&actual, &format!("--{}", long));
                     improve(distance, Variant::Flag(*name));
                 }
-                if let Some(short) = name.as_short() {
-                    if let Some(act) = actual.strip_prefix("--") {
-                        let mut tmp = [0u8; 4];
-                        if act == short.encode_utf8(&mut tmp) {
-                            return Some((ix, Suggestion::ExtraDash(short)));
-                        }
+                if let Some(short) = name.as_short()
+                    && let Some(act) = actual.strip_prefix("--")
+                {
+                    let mut tmp = [0u8; 4];
+                    if act == short.encode_utf8(&mut tmp) {
+                        return Some((ix, Suggestion::ExtraDash(short)));
                     }
                 }
             }
@@ -124,12 +124,11 @@ pub(crate) fn suggest(args: &State, meta: &Meta) -> Option<(usize, Suggestion)> 
         let best_match = best_match?;
 
         // handle missing single dash typos separately
-        if let Variant::Flag(n) = best_match {
-            if let Some(long) = n.as_long() {
-                if actual.strip_prefix('-') == Some(long) {
-                    return Some((ix, Suggestion::MissingDash(long)));
-                }
-            }
+        if let Variant::Flag(n) = best_match
+            && let Some(long) = n.as_long()
+            && actual.strip_prefix('-') == Some(long)
+        {
+            return Some((ix, Suggestion::MissingDash(long)));
         }
         Some((ix, Suggestion::Variant(best_match)))
     }

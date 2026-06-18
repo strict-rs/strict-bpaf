@@ -1,16 +1,16 @@
 use crate::{
-    buffer::{
-        splitter::{split, Chunk},
-        Block, Skip, Style, Token,
-    },
     Doc, OptionParser,
+    buffer::{
+        Block, Skip, Style, Token,
+        splitter::{Chunk, split},
+    },
 };
 
 #[cfg(feature = "docgen")]
 use crate::{
-    buffer::{extract_sections, Info, Meta},
-    meta_help::render_help,
     Parser,
+    buffer::{Info, Meta, extract_sections},
+    meta_help::render_help,
 };
 
 #[inline(never)]
@@ -258,7 +258,9 @@ impl Doc {
                         Block::Block => {
                             res.push_str("<p>");
                         }
-                        Block::Meta => todo!(),
+                        Block::Meta => {
+                            res.push_str("<pre>");
+                        }
                         Block::Section3 | Block::Section4 => {
                             res.push_str("<div style='padding-left: 0.5em'>")
                         }
@@ -297,7 +299,9 @@ impl Doc {
                         }
                         Block::Mono | Block::TermRef => {}
                         Block::Section3 | Block::Section4 => res.push_str("</div>"),
-                        Block::Meta => todo!(),
+                        Block::Meta => {
+                            res.push_str("</pre>");
+                        }
                     }
                 }
             }
@@ -419,7 +423,9 @@ impl Doc {
                         Block::Block => {
                             res.push('\n');
                         }
-                        Block::Meta => todo!(),
+                        Block::Meta => {
+                            mono += 1;
+                        }
                         Block::Mono => {
                             mono += 1;
                         }
@@ -457,7 +463,9 @@ impl Doc {
                         Block::Mono => {
                             mono -= 1;
                         }
-                        Block::Meta => todo!(),
+                        Block::Meta => {
+                            mono -= 1;
+                        }
                     }
                 }
             }

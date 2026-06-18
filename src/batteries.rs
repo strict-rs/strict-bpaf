@@ -8,7 +8,7 @@
 //! Examples contain combinatoric usage, for derive usage you should create a parser function and
 //! use `external` annotation.
 
-use crate::{construct, literal, parsers::NamedArg, short, Parser};
+use crate::{Cx, Parser, construct, literal, parsers::Named, short};
 
 /// `--verbose` and `--quiet` flags with results encoded as number
 ///
@@ -91,16 +91,16 @@ pub fn verbose_by_slice<T: Copy + 'static, const N: usize>(
 
 /// Pick last passed value between two different flags
 ///
-/// Usually `bpaf` only allows to parse a single instance for every invocation unless
-/// you specify [`many`](Parser::many) or [`some`](Parser::some). `toggle_flag` would consume
-/// multiple instances of two different flags and returns last specified value.
+/// Usually `bpaf` only allows to parse a single instance for every invocation unless you specify
+/// [`many`](Parser::many) or [`some`](Parser::some). `toggle_flag` would consume multiple instances of two different flags and
+/// returns last specified value.
 ///
 /// This function relies on a fact that selection between two different parsers prefers left most
-/// value. This helps to preserve relative order of parsrs.
-/// You can use similar approach to combine multiple flags accounting for their relative order.
+/// value. This helps to preserve relative order of parsrs. You can use similar approach to combine
+/// multiple flags accounting for their relative order.
 ///
-/// Parser returns `Optional<T>` value, you can add a fallback with [`map`](Parser::map) or turn
-/// missing value info failure with a custom error message with [`parse`](Parser::parse).
+/// Parser returns `Optional<T>` value, you can add a fallback with [`map`](Parser::map) or turn missing value info
+/// failure with a custom error message with [`parse`](Parser::parse).
 ///
 /// # Example
 /// ```console
@@ -126,9 +126,9 @@ pub fn verbose_by_slice<T: Copy + 'static, const N: usize>(
 /// }
 /// ```
 pub fn toggle_flag<T: Copy + 'static>(
-    a: NamedArg,
+    a: Cx<Named>,
     val_a: T,
-    b: NamedArg,
+    b: Cx<Named>,
     val_b: T,
 ) -> impl Parser<Option<T>> {
     let a = a.req_flag(val_a);

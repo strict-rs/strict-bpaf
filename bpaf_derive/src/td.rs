@@ -3,10 +3,10 @@ use crate::{
     help::Help,
     utils::{parse_arg, parse_opt_arg},
 };
-use quote::{quote, ToTokens};
 use syn::{
+    Error, Expr, Ident, LitChar, LitStr, Result,
     parse::{Parse, ParseStream},
-    parse_quote, token, Error, Expr, Ident, LitChar, LitStr, Result,
+    parse_quote, token,
 };
 
 // 1. options[("name")] and command[("name")] must be first in line and change parsing mode
@@ -53,33 +53,6 @@ pub(crate) enum Mode {
 }
 
 #[derive(Debug)]
-pub(crate) enum HelpMsg {
-    Lit(String),
-    Custom(Box<Expr>),
-}
-
-impl From<String> for HelpMsg {
-    fn from(value: String) -> Self {
-        Self::Lit(value)
-    }
-}
-
-impl From<Box<Expr>> for HelpMsg {
-    fn from(value: Box<Expr>) -> Self {
-        Self::Custom(value)
-    }
-}
-
-impl ToTokens for HelpMsg {
-    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
-        match self {
-            HelpMsg::Lit(l) => l.to_tokens(tokens),
-            HelpMsg::Custom(l) => l.to_tokens(tokens),
-        }
-    }
-}
-
-#[derive(Debug)]
 pub(crate) struct TopInfo {
     /// Should visibility for generated function to be inherited?
     pub(crate) private: bool,
@@ -91,6 +64,9 @@ pub(crate) struct TopInfo {
     pub(crate) ignore_rustdoc: bool,
 
     pub(crate) adjacent: bool,
+    /// left-anchored adjacency for the whole `construct!` block (Parser mode), the top-level
+    /// sibling of [`adjacent`](Self::adjacent)
+    pub(crate) start_adjacent: bool,
     pub(crate) mode: Mode,
     pub(crate) attrs: Vec<PostDecor>,
 
@@ -105,6 +81,7 @@ impl Default for TopInfo {
             custom_name: None,
             boxed: false,
             adjacent: false,
+            start_adjacent: false,
             mode: Mode::Parser {
                 parser: Default::default(),
             },
@@ -175,6 +152,7 @@ impl Parse for TopInfo {
         let mut options = None;
         let mut parser = Some(ParserCfg::default());
         let mut adjacent = false;
+        let mut start_adjacent = false;
         let mut attrs = Vec::new();
         let mut first = true;
         let mut bpaf_path = None;
@@ -218,14 +196,16 @@ impl Parse for TopInfo {
                 boxed = true;
             } else if kw == "adjacent" {
                 adjacent = true;
+            } else if kw == "start_adjacent" {
+                start_adjacent = true;
             } else if kw == "fallback_to_usage" {
                 if let Some(opts) = options.as_mut() {
                     opts.fallback_usage = true;
                 } else {
                     return Err(Error::new_spanned(
-                    kw,
-                    "This annotation only makes sense in combination with `options` or `command`",
-                ));
+                        kw,
+                        "This annotation only makes sense in combination with `options` or `command`",
+                    ));
                 }
             } else if kw == "short" {
                 let short = parse_arg(input)?;
@@ -293,6 +273,7 @@ impl Parse for TopInfo {
             custom_name,
             boxed,
             adjacent,
+            start_adjacent,
             mode,
             attrs,
             bpaf_path,
@@ -401,32 +382,8 @@ pub(crate) enum EAttr {
     Hide,
     UnitShort(Option<LitChar>),
     UnitLong(Option<LitStr>),
-    Descr(Help),
     Header(Help),
     Footer(Help),
     Usage(Box<Expr>),
     Env(Box<Expr>),
-    ToOptions,
-}
-
-impl ToTokens for EAttr {
-    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
-        match self {
-            Self::ToOptions => quote!(to_options()),
-            Self::NamedCommand(n) => quote!(command(#n)),
-            Self::CommandShort(n) => quote!(short(#n)),
-            Self::CommandLong(n) => quote!(long(#n)),
-            Self::Adjacent => quote!(adjacent()),
-            Self::Descr(d) => quote!(descr(#d)),
-            Self::Header(d) => quote!(header(#d)),
-            Self::Footer(d) => quote!(footer(#d)),
-            Self::Usage(u) => quote!(usage(#u)),
-            Self::Env(e) => quote!(env(#e)),
-            Self::Hide => quote!(hide()),
-            Self::FallbackUsage => quote!(fallback_to_usage()),
-
-            Self::UnnamedCommand | Self::UnitShort(_) | Self::UnitLong(_) => unreachable!(),
-        }
-        .to_tokens(tokens);
-    }
 }

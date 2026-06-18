@@ -1,5 +1,26 @@
 # Change Log
 
+## bpaf [0.10.0], bpaf_derive [0.10.0] - 2026-06-14
+
+A deliberately breaking release. The headline change replaces the per-combinator parser zoo (`ParseFlag`, `ParseArgument`, `ParseMany`, …) with a single type-state builder, `Cx<I>`. Every constructor and combinator now returns some `Cx<…>`, and one blanket `impl Parser for Cx` makes it a parser exactly when its inner state is finished. Fluent chains and all method names / arities are unchanged — only **explicit type annotations** need updating. See [`MIGRATION.md`](MIGRATION.md) for a step-by-step upgrade guide with before/after examples.
+
+### Breaking changes (migration guide)
+- Constructors: `short` / `long` / `env` now return `Cx<Named>`; `positional::<T>` → `Cx<Positional<T>>`; `any::<I,T,F>` → `Cx<Anything<T>>`; `literal` → `Cx<Anything<()>>`; `pure` → `Cx<Pure<T>>`; `pure_with` → `Cx<PureWith<…>>`; `fail` → `Cx<Fail<T>>`; `OptionParser::command` and `command` → `Cx<Command<T>>`.
+- Every `Parse*` combinator type was renamed (dropping the `Parse` prefix) into an internal, `#[doc(hidden)]` marker that appears inside `Cx<…>`, e.g. `ParseArgument<u32>` → `Cx<Argument<u32>>`, `ParseMany<ParseFlag<bool>>` → `Cx<Many<Cx<Flag<bool>>, Vec<bool>, bool>>`. To erase a parser, prefer `.boxed()` → `Box<dyn Parser<T>>`.
+- `ParseMany`, `ParseSome` and `ParseCollect` are merged into a single bounded `Many<P, C, T>`. `collect` parsers are now rendered as optional (rather than required) in `--help`, matching that they accept zero items.
+- `OptionParser::help_parser` / `version_parser` and `batteries::toggle_flag` take `Cx<Named>` instead of `NamedArg`.
+- `req_flag` now returns the concrete `Cx<Flag<T>>` (was an opaque `impl Parser<T>`) — strictly more capable.
+- The `NamedArg` type alias (`= Cx<Named>`) is kept, `#[deprecated]`, for one release as a migration aid.
+
+### Features
+- `Cx<Con<_>>::start_adjacent` and `#[bpaf(start_adjacent)]` — left-anchored adjacency: the consumed block must begin at the current position with nothing unparsed to its left.
+- `Parser::take`, `Parser::at_least`, `Parser::in_range` — bounded repetition built on the unified `Many`.
+- `cx()` — lift any hand-written `Parser` into the `Cx` family.
+- `#[diagnostic::on_unimplemented]` on `Parser` gives an actionable error when a half-built builder (such as `Cx<Named>`) is used where a finished parser is required.
+
+### Tooling
+- Minimum supported Rust version is now 1.96 and the whole workspace moved to edition 2024.
+
 ## bpaf [0.9.26], bpaf_derive [0.5.26] - 2026-05-13
 - Support struct level doc comments along with `adjacent` (#453)
 

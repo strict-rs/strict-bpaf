@@ -1,4 +1,4 @@
-use crate::shared::{cargo_opts, package_and_testables, CargoOpts, PackageAndTestables};
+use crate::shared::{CargoOpts, PackageAndTestables, cargo_opts, package_and_testables};
 use bpaf::*;
 use std::process::Command;
 

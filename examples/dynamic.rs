@@ -49,6 +49,14 @@ enum Ty {
     String,
 }
 
+fn print_value(name: &str, value: Value) {
+    match value {
+        Value::Bool(value) => println!("{name}: bool={value}"),
+        Value::Number(value) => println!("{name}: number={value}"),
+        Value::String(value) => println!("{name}: string={value}"),
+    }
+}
+
 fn main() {
     let items = &[
         ("banana", Ty::Bool),
@@ -69,5 +77,7 @@ fn main() {
     }
 
     let options = parser.run();
-    println!("{:?}", options);
+    for (name, value) in options {
+        print_value(&name, value);
+    }
 }

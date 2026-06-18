@@ -1,0 +1,5 @@
+error: Refusing to derive a positional item for bool, you can fix this by either adding a short/long name or making it positional explicitly
+ --> tests/ui/bool_positional.rs:6:13
+  |
+6 | struct Opts(bool);
+  |             ^^^^
