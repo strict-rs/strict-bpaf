@@ -5,6 +5,6 @@
 //! after changing a diagnostic with `TRYBUILD=overwrite cargo test --test ui`.
 #[test]
 fn ui() {
-    let t = trybuild::TestCases::new();
+    let mut t = trybuild::TestCases::new();
     t.compile_fail("tests/ui/*.rs");
 }

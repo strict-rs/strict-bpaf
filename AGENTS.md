@@ -13,13 +13,13 @@
 
 ## Toolchain
 
-Edition 2024, MSRV 1.96. Stable for everything except `cargo +nightly fmt` (edition-2024 formatting) and `cargo +nightly doc2readme --expand-macros` (README).
+Edition 2024, MSRV 1.97. Stable for everything except `cargo +nightly fmt` (edition-2024 formatting) and `cargo +nightly doc2readme --expand-macros` (README).
 
 ## Commands
 
 - **Test:** `cargo test -p bpaf -p bpaf_derive --all-targets --no-fail-fast` (also run with `--no-default-features` and `--all-features`). Single test: `cargo test -p bpaf <name>`; one integration file: `cargo test -p bpaf --test <file>`; doctests: `cargo test --doc`; compile-fail: `cargo test -p bpaf --test ui` (`TRYBUILD=overwrite` to refresh `.stderr`).
 - **Lint / format:** `cargo clippy --workspace --all-targets` (+ `--no-default-features`, `--all-features`); `cargo +nightly fmt --all -- --check`.
-- **Docs / MSRV:** `cargo doc --all --no-deps --all-features` under `RUSTDOCFLAGS=-Dwarnings` (broken intra-doc links fail); `cargo +1.96.0 build --workspace`.
+- **Docs / MSRV:** `cargo doc --all --no-deps --all-features` under `RUSTDOCFLAGS=-Dwarnings` (broken intra-doc links fail); `cargo +1.97 build --workspace`.
 - **Regenerate generated docs** (build outputs — edit the rust sources): 
   - `src/docs2/*.md` → `cargo test -p docs2` (see `docs2/AGENTS.md`);
   - `src/_documentation.rs` → `cargo run -p documentation` (see `documentation/AGENTS.md`);

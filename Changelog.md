@@ -19,7 +19,7 @@ A deliberately breaking release. The headline change replaces the per-combinator
 - `#[diagnostic::on_unimplemented]` on `Parser` gives an actionable error when a half-built builder (such as `Cx<Named>`) is used where a finished parser is required.
 
 ### Tooling
-- Minimum supported Rust version is now 1.96 and the whole workspace moved to edition 2024.
+- Minimum supported Rust version is now 1.97 and the whole workspace moved to edition 2024.
 
 ## bpaf [0.9.26], bpaf_derive [0.5.26] - 2026-05-13
 - Support struct level doc comments along with `adjacent` (#453)

@@ -12,7 +12,7 @@
 //! # let options = || short('a').switch().to_options();
 //! let options = options();
 //! let md = options.render_markdown("app_name");
-//! let roff = options.render_manpage("app_name", Section::General, None, None, None);
+//! let roff = options.render_manpage("app_name", bpaf::doc::Section::General, None, None, None);
 //! # drop(md); drop(roff);
 //! // then save those docs into a files
 //! // If you commit those docs into your repo and optionally fail a test if there

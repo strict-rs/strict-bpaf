@@ -1,4 +1,4 @@
-# bpaf ![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue) [![bpaf on crates.io](https://img.shields.io/crates/v/bpaf)](https://crates.io/crates/bpaf) [![bpaf on docs.rs](https://docs.rs/bpaf/badge.svg)](https://docs.rs/bpaf) [![Source Code Repository](https://img.shields.io/badge/Code-On%20GitHub-blue?logo=GitHub)](https://github.com/pacak/bpaf) [![Rust Version: 1.96.0](https://img.shields.io/badge/rustc-1.96.0-orange.svg)](https://github.com/rust-lang/rust/releases/tag/1.96.0)
+# bpaf ![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue) [![bpaf on crates.io](https://img.shields.io/crates/v/bpaf)](https://crates.io/crates/bpaf) [![bpaf on docs.rs](https://docs.rs/bpaf/badge.svg)](https://docs.rs/bpaf) [![Source Code Repository](https://img.shields.io/badge/Code-On%20GitHub-blue?logo=GitHub)](https://github.com/pacak/bpaf) [![Rust Version: 1.97.0](https://img.shields.io/badge/rustc-1.97.0-orange.svg)](https://github.com/rust-lang/rust/releases/tag/1.97.0)
 
 Lightweight and flexible command line argument parser with derive and combinatoric style API
 
