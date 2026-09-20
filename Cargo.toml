@@ -8,7 +8,7 @@ authors = [ "Michael Baykov <manpacket@gmail.com>" ]
 readme = "README.md"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/pacak/bpaf"
-rust-version = "1.97"
+rust-version = "1.98"
 
 [workspace]
 members =  [
@@ -32,7 +32,7 @@ documentation = { path = "./documentation", version = "0.10.0" }
 docs2 = { path = "./docs2", version = "0.10.0" }
 
 # External dependencies
-syn = { version = "3.0.3", default-features = false }
+syn = { version = "3.0.6", default-features = false }
 cargo_metadata = "0.23.1"
 trybuild = {  version = "1.0", path = "../strict-trybuild" }
 once_cell = "1.21.4"
@@ -44,7 +44,7 @@ vt100 = "0.16"
 ptyprocess = "0.5.0"
 anyhow = "1.0.104"
 shell-words = "1.1.1"
-owo-colors = { version = "4.3", default-features = false }
+owo-colors = { version = "4.4", default-features = false }
 supports-color = { version = "3.0" }
 
 [workspace.metadata.cauwugo]
